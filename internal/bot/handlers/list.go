@@ -5,7 +5,6 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
-// ListHandler показывает список отслеживаемых ссылок
 type ListHandler struct {
 	usecase usecase.UseCase
 }
@@ -15,8 +14,6 @@ func NewListHandler(usecase usecase.UseCase) *ListHandler {
 }
 
 func (h *ListHandler) Handle(c telebot.Context) error {
-	userID := (int)(c.Sender().ID)
-	
-	h.usecase.ListLinks(userID)
+	_ = (int)(c.Sender().ID)
 	return c.Send("Вот ваш список отслеживаемых ссылок.")
 }
