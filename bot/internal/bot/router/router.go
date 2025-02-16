@@ -2,8 +2,8 @@ package router
 
 import (
 	"fmt"
-	"tbank/internal/bot/handlers"
-	"tbank/internal/usecase"
+	"tbank/bot/internal/bot/handlers"
+	"tbank/bot/internal/usecase"
 
 	"gopkg.in/telebot.v3"
 )

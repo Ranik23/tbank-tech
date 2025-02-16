@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"tbank/internal/usecase"
+	"tbank/bot/internal/usecase"
 	"gopkg.in/telebot.v3"
 )
 

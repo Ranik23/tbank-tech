@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
-	"tbank/config"
-	"tbank/internal/models/requests"
-	"tbank/internal/models/responses"
-	"tbank/internal/storage"
+	"tbank/bot/config"
+	"tbank/bot/internal/models/requests"
+	"tbank/bot/internal/models/responses"
+	"tbank/bot/internal/storage"
 )
 
 
@@ -30,15 +31,17 @@ type UseCase interface {
 
 
 type UseCaseImpl struct {
-	config *config.Config
-	client http.Client
+	config 	*config.Config
+	client 	http.Client
 	storage storage.Storage
+	logger 	*slog.Logger
 }
 
-func NewUseCaseImpl(config *config.Config, storage storage.Storage) *UseCaseImpl {
+func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog.Logger) *UseCaseImpl {
 	return &UseCaseImpl{
 		config: config,
 		storage: storage,
+		logger: logger,
 	}
 }
 

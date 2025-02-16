@@ -1,9 +1,9 @@
 package main
 
 import (
-	"tbank/internal/bot/handlers"
-	"tbank/internal/bot/router"
-	"tbank/config"
+	"tbank/bot/internal/bot/handlers"
+	"tbank/bot/internal/bot/router"
+	"tbank/bot/config"
 	"time"
 	"gopkg.in/telebot.v3"
 )
