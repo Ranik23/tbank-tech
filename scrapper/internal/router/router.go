@@ -32,6 +32,8 @@ func (r *Router) AddHandler(methodName string, path string, handler gin.HandlerF
 		r.engine.POST(path, handler)
 	case "GET":
 		r.engine.GET(path, handler)
+	case "DELETE":
+		r.engine.DELETE(path, handler)
 	default:
 		return ErrMethodUnknown
 	}

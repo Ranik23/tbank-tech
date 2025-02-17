@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"tbank/scrapper/config"
 	"tbank/scrapper/internal/router"
+	"tbank/scrapper/internal/router/api"
+	"tbank/scrapper/internal/usecase"
 	"time"
 )
 
@@ -25,7 +27,14 @@ func NewApp(config *config.Config) *App {
 
 	router := router.NewRouter()
 
-	// usecase
+	usecase := usecase.NewUseCase()
+
+	router.AddHandler("GET", "/links", api.LinksHandler(usecase))
+	router.AddHandler("POST", "/tg-chat/{id}", api.RegisterChat(usecase))
+	router.AddHandler("DELETE", "/tg-chat/{id}", api.DeleteChat(usecase))
+	router.AddHandler("POST", "/links", api.AddLinkHanlder(usecase))
+	router.AddHandler("DELETE", "/links", api.DeleteLinkHandler(usecase))
+
 
 	srv := &http.Server{
 		Addr:    addr,
