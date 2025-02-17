@@ -24,8 +24,8 @@ type UseCase interface {
 	RegisterChat(сtx context.Context, id int) 													error
 	DeleteChat(ctx context.Context, id int) 													error 
 	Help(ctx context.Context)																	error 
-	AddLink(ctx context.Context, chatID int, link string, tags []string, filters []string) 		(*responses.LinkResponse, error)
-	RemoveLink(ctx context.Context, chatID int, link string) 									(*responses.LinkResponse, error)
+	AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) 	(*responses.LinkResponse, error)
+	RemoveLink(ctx context.Context, chatID int64, link string) 									(*responses.LinkResponse, error)
 	ListLinks(ctx context.Context, chatID int64) 												(*responses.ListLinksResponse, error) 
 }
 
@@ -114,7 +114,7 @@ func (uc *UseCaseImpl) DeleteChat(ctx context.Context, chatID int) error {
 }
 
 
-func (uc *UseCaseImpl) Help() error {
+func (uc *UseCaseImpl) Help(ctx context.Context) error {
 	return nil
 }
 

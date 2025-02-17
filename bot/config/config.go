@@ -11,6 +11,11 @@ type ScrapperServiceConfig struct {
 	Port string					
 }
 
+type TelegramBotServerConfig struct {
+	Host string
+	Port string
+}
+
 type DataBaseConfig struct {		
 	Host 		string				
 	Port 		string			
@@ -24,9 +29,10 @@ type TelegramConfig struct {
 }
 
 type Config struct {
-	ScrapperService ScrapperServiceConfig
-	DataBase		DataBaseConfig
-	Telegram		TelegramConfig 
+	ScrapperService 	ScrapperServiceConfig
+	DataBase			DataBaseConfig
+	Telegram			TelegramConfig 
+	TelegramBotServer	TelegramBotServerConfig
 }
 
 
