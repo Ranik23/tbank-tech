@@ -1,8 +1,8 @@
-package server
+package grpcserver
 
 import (
 	"context"
-	"tbank/bot/internal/usecase"
+	botusecase"tbank/bot/internal/bot-usecase"
 	"tbank/bot/proto/gen"
 	"gopkg.in/telebot.v3"
 )
@@ -10,11 +10,11 @@ import (
 
 type BotServer struct {
 	gen.UnimplementedBotServer
-	usecase 	usecase.UseCase
+	usecase 	botusecase.UseCase
 	telegramBot *telebot.Bot
 }
 
-func NewBotServer(usecase usecase.UseCase, bot *telebot.Bot) *BotServer {
+func NewBotServer(usecase botusecase.UseCase, bot *telebot.Bot) *BotServer {
 	return &BotServer{
 		usecase: usecase,
 		telegramBot: bot,

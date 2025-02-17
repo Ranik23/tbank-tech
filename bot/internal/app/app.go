@@ -6,15 +6,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"tbank/bot/config"
-	"tbank/bot/internal/server"
-	"tbank/bot/internal/server/handlers"
-	"tbank/bot/internal/server/router"
-	"tbank/bot/internal/usecase"
+	handlers "tbank/bot/internal/bot-handlers"
+	"tbank/bot/internal/bot-usecase"
+	grpcserver "tbank/bot/internal/grpc-server"
 	"tbank/bot/proto/gen"
 	"time"
-
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
@@ -36,7 +35,7 @@ func NewApp() (*App, error) {
 
 	grpcServer := grpc.NewServer()
 
-	usecase := usecase.NewUseCaseImpl(config, nil, nil)
+	botUseCase := botusecase.NewUseCaseImpl(config, nil, nil)
 
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: config.Telegram.Token,
@@ -49,20 +48,20 @@ func NewApp() (*App, error) {
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, err	
 	}
 
-	botRouter := router.NewRouter(bot, nil)
+	var users sync.Map
 
-	botRouter.AddHandler("/start", handlers.NewStartHandler(usecase))
-	botRouter.AddHandler("/help", handlers.NewHelpHandler(usecase))
-	botRouter.AddHandler("/track", handlers.NewTrackHandler(usecase))
-	botRouter.AddHandler("/untrack", handlers.NewUntrackHandler(usecase))
-	botRouter.AddHandler("/list", handlers.NewListHandler(usecase))
+	bot.Handle("/start", handlers.StartHandler(botUseCase, &users))
+	bot.Handle("/help", handlers.HelpHandler(botUseCase, &users))
+	bot.Handle("/track", handlers.TrackHandler(botUseCase, &users))
+	bot.Handle("/untrack", handlers.UnTrackHandler(botUseCase, &users))
+	bot.Handle("/list", handlers.ListHandler(botUseCase, &users))
+	bot.Handle(telebot.OnText, handlers.MessageHandler(botUseCase, &users))
 
-	botRouter.RegisterHandlers()
 
-	grpcBotServer := server.NewBotServer(usecase, bot)
+	grpcBotServer := grpcserver.NewBotServer(botUseCase, bot)
 
 	gen.RegisterBotServer(grpcServer, grpcBotServer)
 
@@ -102,7 +101,7 @@ func (a *App) Run() error {
 	select {
 	case err := <- errorCh:
 		if errors.Is(err, grpc.ErrServerStopped) {
-			slog.Error("grpc server stopped: %v", err)
+			slog.Error("grpc server stopped: %v", err.Error())
 			return nil
 		}
 		slog.Error("failed to start the grpc-server")
