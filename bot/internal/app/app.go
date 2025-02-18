@@ -12,8 +12,10 @@ import (
 	handlers "tbank/bot/internal/bot-handlers"
 	"tbank/bot/internal/bot-usecase"
 	grpcserver "tbank/bot/internal/grpc-server"
+	"tbank/bot/internal/usecase"
 	"tbank/bot/proto/gen"
 	"time"
+
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
@@ -51,6 +53,8 @@ func NewApp() (*App, error) {
 		return nil, err	
 	}
 
+	useCase := usecase.NewUseCaseImp(bot)
+
 	var users sync.Map
 
 	bot.Handle("/start", handlers.StartHandler(botUseCase, &users))
@@ -61,7 +65,7 @@ func NewApp() (*App, error) {
 	bot.Handle(telebot.OnText, handlers.MessageHandler(botUseCase, &users))
 
 
-	grpcBotServer := grpcserver.NewBotServer(botUseCase, bot)
+	grpcBotServer := grpcserver.NewBotServer(useCase, bot)
 
 	gen.RegisterBotServer(grpcServer, grpcBotServer)
 

@@ -13,12 +13,15 @@ import (
 	"tbank/scrapper/internal/router/api"
 	"tbank/scrapper/internal/usecase"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 type App struct {
-	server *http.Server
-	config *config.Config
-	logger *slog.Logger
+	server 		*http.Server
+	config 		*config.Config
+	logger 		*slog.Logger
+	grpcClient 	grpc.ClientConnInterface
 }
 
 func NewApp(config *config.Config) *App {
