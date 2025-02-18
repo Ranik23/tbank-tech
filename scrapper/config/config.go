@@ -8,13 +8,23 @@ type ScrapperServerConfig struct {
 	Port string
 }
 
+type DataBaseConfig struct {		
+	Host 		string				
+	Port 		string			
+	Username 	string				
+	Password 	string					
+	DBName 		string					
+}
+
 
 type Config struct {
 	ScrapperServer ScrapperServerConfig
+	DataBase			DataBaseConfig
+
 }
 
 func LoadConfig() (*Config, error) {
-	viper.SetConfigFile("env")
+	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

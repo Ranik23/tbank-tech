@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package scrapper;
+
+option go_package = "scrapper/proto/gen;gen";
+
+service Scrapper {
+  rpc RegisterChat(RegisterChatRequest) returns (RegisterChatResponse);
+  rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
+  rpc GetLinks(GetLinksRequest) returns (ListLinksResponse);
+  rpc AddLink(AddLinkRequest) returns (LinkResponse);
+  rpc RemoveLink(RemoveLinkRequest) returns (LinkResponse);
+}
+
+message RegisterChatRequest {
+  int64 id = 1;
+}
+
+message RegisterChatResponse {
+  string message = 1;
+}
+
+message DeleteChatRequest {
+  int64 id = 1;
+}
+
+message DeleteChatResponse {
+  string message = 1;
+}
+
+message GetLinksRequest {
+  int64 tg_chat_id = 1;
+}
+
+message AddLinkRequest {
+  int64 tg_chat_id = 1;
+  string link = 2;
+  repeated string tags = 3;
+  repeated string filters = 4;
+}
+
+message RemoveLinkRequest {
+  int64 tg_chat_id = 1;
+  string link = 2;
+}
+
+message LinkResponse {
+  int64 id = 1;
+  string url = 2;
+  repeated string tags = 3;
+  repeated string filters = 4;
+}
+
+message ListLinksResponse {
+  repeated LinkResponse links = 1;
+  int32 size = 2;
+}
+
+message ApiErrorResponse {
+  string description = 1;
+  string code = 2;
+  string exception_name = 3;
+  string exception_message = 4;
+  repeated string stacktrace = 5;
+}
