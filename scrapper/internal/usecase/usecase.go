@@ -8,7 +8,6 @@ import (
 	dbmodels "tbank/scrapper/internal/db/models"
 	"tbank/scrapper/internal/storage"
 	"time"
-
 	gocron "github.com/go-co-op/gocron/v2"
 	"google.golang.org/grpc"
 )
@@ -16,11 +15,11 @@ import (
 
 
 type UseCase interface {
-	RegisterChat(ctx context.Context, chatID uint) error
-	DeleteChat(ctx context.Context, chatID uint) error
-	GetLinks(ctx context.Context, chatID uint) ([]dbmodels.Link, error)
-	AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string) (*dbmodels.Link, error)
-	RemoveLink(ctx context.Context, linkID uint) error
+	RegisterChat(ctx context.Context, chatID uint) 										error
+	DeleteChat(ctx context.Context, chatID uint) 										error
+	GetLinks(ctx context.Context, chatID uint) 											([]dbmodels.Link, error)
+	AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string) 	(*dbmodels.Link, error)
+	RemoveLink(ctx context.Context, linkID uint) 										error
 }
 
 type UseCaseImpl struct {

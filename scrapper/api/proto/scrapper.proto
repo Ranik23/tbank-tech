@@ -2,14 +2,45 @@ syntax = "proto3";
 
 package scrapper;
 
-option go_package = "scrapper/proto/gen;gen";
+import "google/api/annotations.proto";
+
+option go_package = "scrapper/api/proto/gen;gen";
+
 
 service Scrapper {
-  rpc RegisterChat(RegisterChatRequest) returns (RegisterChatResponse);
-  rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse);
-  rpc GetLinks(GetLinksRequest) returns (ListLinksResponse);
-  rpc AddLink(AddLinkRequest) returns (LinkResponse);
-  rpc RemoveLink(RemoveLinkRequest) returns (LinkResponse);
+  rpc RegisterChat(RegisterChatRequest) returns (RegisterChatResponse) {
+    option (google.api.http) = {
+      post: "/tg-chat/{id}"
+    };
+  }
+
+  rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse) {
+    option (google.api.http) = {
+      delete: "/tg-chat/{id}"
+    };
+  }
+
+  rpc GetLinks(GetLinksRequest) returns (ListLinksResponse) {
+    option (google.api.http) = {
+      get: "/links"
+    };
+  }
+  
+
+  rpc AddLink(AddLinkRequest) returns (LinkResponse) {
+    option (google.api.http) = {
+      post: "/links"
+      body: "*"
+    };
+  }
+  
+
+  rpc RemoveLink(RemoveLinkRequest) returns (LinkResponse) {
+    option (google.api.http) = {
+      delete: "/links"
+    };
+  }
+    
 }
 
 message RegisterChatRequest {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -10,8 +11,10 @@ import (
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
 	grpcserver "tbank/scrapper/internal/grpc-server"
-	"tbank/scrapper/internal/storage"
+	httpserver "tbank/scrapper/internal/http-server"
+	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
+
 	gocron "github.com/go-co-op/gocron/v2"
 	"google.golang.org/grpc"
 )
@@ -33,24 +36,24 @@ func NewApp() (*App, error) {
 
 	grpcServer := grpc.NewServer()
 
-	storage, err := storage.NewStorageImpl(cfg)
-	if err != nil {
-		return nil, err
-	}
+	// storage, err := storage.NewStorageImpl(cfg)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		return nil, err
 	}
 
-	scheduler.Start() // TODO
+	scheduler.Start()
 
-	usecase , err := usecase.NewUseCaseImpl(cfg, storage, scheduler)
+	usecase , err := usecase.NewUseCaseImpl(cfg, nil, scheduler)
 	if err != nil {
 		return nil, err
 	}
 
-	scrapperGRPCServer := grpcserver.NewScrapperServer(usecase, storage)
+	scrapperGRPCServer := grpcserver.NewScrapperServer(usecase, nil)
 
 	gen.RegisterScrapperServer(grpcServer, scrapperGRPCServer)
 
@@ -62,20 +65,31 @@ func NewApp() (*App, error) {
 }
 
 func (a *App) Run() error {
-	addr := fmt.Sprintf("%s:%s", a.config.ScrapperServer.Host, a.config.ScrapperServer.Port)
 
-	listener, err := net.Listen("tcp", addr)
+	grpcAddr := fmt.Sprintf("%s:%s", a.config.ScrapperServer.Host, a.config.ScrapperServer.Port)
+	httpAddr := fmt.Sprintf("%s:%s", a.config.ScrapperServerHTTP.Host, a.config.ScrapperServerHTTP.Port)
+
+	listener, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	a.logger.Info("Запуск gRPC сервера", "addr", addr)
+	a.logger.Info("Запуск gRPC сервера", "grpcAddr", grpcAddr)
 
 	errorCh := make(chan error, 1)
 
+	errorChProxy := make(chan error, 1)
+
 	go func() {
 		if err := a.grpcServer.Serve(listener); err != nil {
-			errorCh <- fmt.Errorf("gRPC server error: %w", err)
+			errorCh <- fmt.Errorf("gRPC server error: %v", err)
+		}
+	}()
+
+	// Запуск прокси-сервера
+	go func() {
+		if err := httpserver.RunGateway(context.Background(), grpcAddr, httpAddr); err != nil {
+			errorChProxy <- fmt.Errorf("http proxy server error: %v", err)
 		}
 	}()
 
@@ -90,7 +104,11 @@ func (a *App) Run() error {
 		a.logger.Info("gRPC сервер корректно завершил работу")
 		return nil
 	case err := <-errorCh:
-		a.logger.Error("Ошибка сервера", "error", err)
+		a.logger.Error("Ошибка сервера", slog.String("error", err.Error()))
+		return err
+
+	case err := <- errorChProxy:
+		a.logger.Error("Ошибка прокси-сервера", slog.String("error", err.Error()))
 		return err
 	}
 }

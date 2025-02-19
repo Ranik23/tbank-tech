@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.12.4
-// source: scrapper/proto/scrapper.proto
+// source: scrapper/api/proto/scrapper.proto
 
 package gen
 
@@ -269,5 +269,5 @@ var Scrapper_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "scrapper/proto/scrapper.proto",
+	Metadata: "scrapper/api/proto/scrapper.proto",
 }
