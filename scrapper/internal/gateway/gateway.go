@@ -1,4 +1,4 @@
-package httpserver
+package gateway
 
 import (
 	"context"

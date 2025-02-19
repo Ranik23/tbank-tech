@@ -11,7 +11,7 @@ import (
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
 	grpcserver "tbank/scrapper/internal/grpc-server"
-	httpserver "tbank/scrapper/internal/http-server"
+	"tbank/scrapper/internal/gateway"
 	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
 
@@ -88,7 +88,7 @@ func (a *App) Run() error {
 
 	// Запуск прокси-сервера
 	go func() {
-		if err := httpserver.RunGateway(context.Background(), grpcAddr, httpAddr); err != nil {
+		if err := gateway.RunGateway(context.Background(), grpcAddr, httpAddr); err != nil {
 			errorChProxy <- fmt.Errorf("http proxy server error: %v", err)
 		}
 	}()
