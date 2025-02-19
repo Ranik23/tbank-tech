@@ -35,9 +35,11 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
+	logger := slog.Default()
+
 	grpcServer := grpc.NewServer()
 
-	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, nil)
+	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, logger)
 	if err != nil {
 		return nil, err
 	}
