@@ -11,14 +11,6 @@ import (
 )
 
 
-const (
-	StateWaitingForLinkLINK = 1
-	StateWaitingForFiltersLINK = 2
-	StateWaitingForTagsLINK = 3
-	StateWaitingForLinkUNLINK = 4
-)
-
-
 func MessageHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
     return func(c telebot.Context) error {
         userID := c.Sender().ID
