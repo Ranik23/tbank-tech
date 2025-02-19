@@ -2,9 +2,15 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"tbank/bot/api/proto/gen"
+	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/db/models"
 	"tbank/scrapper/internal/storage"
+	"time"
+
 	gocron "github.com/go-co-op/gocron/v2"
+	"google.golang.org/grpc"
 )
 
 
@@ -18,12 +24,30 @@ type UseCase interface {
 }
 
 type UseCaseImpl struct {
-	storage storage.Storage
-	scheduler gocron.Scheduler
+	cfg 		*config.Config
+	storage 	storage.Storage
+	scheduler 	gocron.Scheduler
+	client 		gen.BotClient
 }
 
-func NewUseCase(storage storage.Storage, scheduler gocron.Scheduler) *UseCaseImpl {
-	return &UseCaseImpl{storage: storage}
+func NewUseCaseImpl(cfg *config.Config, storage storage.Storage, scheduler gocron.Scheduler) (*UseCaseImpl, error) {
+
+	host := cfg.Bot.Host
+	port := cfg.Bot.Port
+
+	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", host, port), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	client := gen.NewBotClient(conn)
+
+	return &UseCaseImpl{
+		cfg: cfg,
+		storage: storage,
+		scheduler: scheduler,
+		client: client,
+	}, nil
 }
 
 func (u *UseCaseImpl) RegisterChat(ctx context.Context, chatID uint) error {
@@ -39,6 +63,19 @@ func (u *UseCaseImpl) GetLinks(ctx context.Context, chatID uint) ([]dbmodels.Lin
 }
 
 func (u *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string) (*dbmodels.Link, error) {
+	_, err := u.scheduler.NewJob(gocron.DurationJob(
+								10 * time.Second,
+						),
+						gocron.NewTask(
+							func(client gen.BotClient) {
+								client.SendUpdate(ctx, &gen.UpdateMessage{})
+							},
+							u.client,
+						),
+					)
+	if err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 

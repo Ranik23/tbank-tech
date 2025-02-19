@@ -7,9 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
 	grpcserver "tbank/scrapper/internal/grpc-server"
-	"tbank/scrapper/api/proto/gen"
+	"tbank/scrapper/internal/storage"
+	"tbank/scrapper/internal/usecase"
+	gocron "github.com/go-co-op/gocron/v2"
 	"google.golang.org/grpc"
 )
 
@@ -19,18 +22,43 @@ type App struct {
 	logger     *slog.Logger
 }
 
-func NewApp(config *config.Config) *App {
+func NewApp() (*App, error) {
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	grpcServer := grpc.NewServer()
-	scrapperGRPCServer := grpcserver.NewScrapperServer()
+
+	storage, err := storage.NewStorageImpl(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	scheduler, err := gocron.NewScheduler()
+	if err != nil {
+		return nil, err
+	}
+
+	scheduler.Start() // TODO
+
+	usecase , err := usecase.NewUseCaseImpl(cfg, storage, scheduler)
+	if err != nil {
+		return nil, err
+	}
+
+	scrapperGRPCServer := grpcserver.NewScrapperServer(usecase, storage)
+
 	gen.RegisterScrapperServer(grpcServer, scrapperGRPCServer)
 
 	return &App{
 		grpcServer: grpcServer,
-		config:     config,
+		config:     cfg,
 		logger:     logger,
-	}
+	}, nil
 }
 
 func (a *App) Run() error {
