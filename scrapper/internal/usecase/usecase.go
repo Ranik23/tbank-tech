@@ -4,6 +4,7 @@ import (
 	"context"
 	dbmodels "tbank/scrapper/internal/db/models"
 	"tbank/scrapper/internal/storage"
+	gocron "github.com/go-co-op/gocron/v2"
 )
 
 
@@ -18,9 +19,10 @@ type UseCase interface {
 
 type UseCaseImpl struct {
 	storage storage.Storage
+	scheduler gocron.Scheduler
 }
 
-func NewUseCase(storage storage.Storage) *UseCaseImpl {
+func NewUseCase(storage storage.Storage, scheduler gocron.Scheduler) *UseCaseImpl {
 	return &UseCaseImpl{storage: storage}
 }
 
