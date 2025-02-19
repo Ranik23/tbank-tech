@@ -13,7 +13,7 @@ import (
 	"tbank/bot/internal/bot-usecase"
 	grpcserver "tbank/bot/internal/grpc-server"
 	"tbank/bot/internal/usecase"
-	"tbank/bot/proto/gen"
+	"tbank/bot/api/proto/gen"
 	"time"
 
 	"google.golang.org/grpc"
@@ -37,7 +37,11 @@ func NewApp() (*App, error) {
 
 	grpcServer := grpc.NewServer()
 
-	botUseCase := botusecase.NewUseCaseImpl(config, nil, nil)
+	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
 
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: config.Telegram.Token,
@@ -105,7 +109,7 @@ func (a *App) Run() error {
 	select {
 	case err := <- errorCh:
 		if errors.Is(err, grpc.ErrServerStopped) {
-			slog.Error("grpc server stopped: %v", err.Error())
+			slog.Error("grpc server stopped", slog.String("err", err.Error()))
 			return nil
 		}
 		slog.Error("failed to start the grpc-server")

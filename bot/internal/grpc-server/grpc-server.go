@@ -3,7 +3,7 @@ package grpcserver
 import (
 	"context"
 	"tbank/bot/internal/usecase"
-	"tbank/bot/proto/gen"
+	"tbank/bot/api/proto/gen"
 	"gopkg.in/telebot.v3"
 )
 

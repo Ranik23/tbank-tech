@@ -14,11 +14,11 @@ func StartHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFu
 	return func(c telebot.Context) error {
 		chatID := c.Chat().ID
 
-		if err := usecase.RegisterChat(context.Background(), chatID); err != nil {
+		response, err := usecase.RegisterChat(context.Background(), chatID);
+		if err != nil {
 			return c.Send(fmt.Sprintf("Ошибка: %v", err))
 		}
-
-		c.Send("Чат зарегестрирован!")
+		c.Send(response.GetMessage())
 
 		return nil
 	}

@@ -10,18 +10,18 @@ import (
 )
 
 type Storage interface {
-	CreateChat(ctx context.Context, chatID uint) error
-	CreateFilter(ctx context.Context, name string) error
-	CreateTag(ctx context.Context, name string) error
-	CreateLinkChat(ctx context.Context, linkID uint, chatID uint) error
-	CreateLinkFilter(ctx context.Context, linkID uint, filterID uint) error
-	CreateLinkTag(ctx context.Context, linkID uint, tagID uint) error
+	CreateChat(ctx context.Context, chatID uint) 						error
+	CreateFilter(ctx context.Context, name string) 						error
+	CreateTag(ctx context.Context, name string) 						error
+	CreateLinkChat(ctx context.Context, linkID uint, chatID uint) 		error
+	CreateLinkFilter(ctx context.Context, linkID uint, filterID uint) 	error
+	CreateLinkTag(ctx context.Context, linkID uint, tagID uint) 		error
 
-	DeleteChat(ctx context.Context, chatID uint) error
-	DeleteLink(ctx context.Context, linkID uint) error 
-	DeleteLinkChat(ctx context.Context, linkID uint, chatID uint) error	 // untrack
+	DeleteChat(ctx context.Context, chatID uint) 						error
+	DeleteLink(ctx context.Context, linkID uint) 						error 
+	DeleteLinkChat(ctx context.Context, linkID uint, chatID uint) 		error
 
-	GetURLS(ctx context.Context, chatID uint) ([]dbmodels.Link, error)
+	GetURLS(ctx context.Context, chatID uint) 							([]dbmodels.Link, error)
 }
 
 type StorageImpl struct {
@@ -40,8 +40,19 @@ func NewStorageImpl(cfg *config.Config) (*StorageImpl, error) {
 	}, nil
 }
 
-func (s *StorageImpl) GetURLS(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
-	return nil, nil
+func (s *StorageImpl) GetURLs(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
+	var links []dbmodels.Link
+
+	err := s.db.WithContext(ctx).
+		Joins("JOIN link_chats ON link_chats.link_id = links.id").
+		Where("link_chats.chat_id = ?", chatID).
+		Find(&links).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return links, nil
 }
 
 func (s *StorageImpl) DeleteChat(ctx context.Context, chatID uint) error {
@@ -52,7 +63,6 @@ func (s *StorageImpl) DeleteLink(ctx context.Context, linkID uint) error {
 	return s.db.WithContext(ctx).Where("id = ?", linkID).Delete(&dbmodels.Link{}).Error
 }
 
-// просто удалить линк и из-за каскада удалится и запись в LinkChat
 func (s *StorageImpl) DeleteLinkChat(ctx context.Context, linkID uint, chatID uint) error {
 	return s.db.WithContext(ctx).
 		Where("link_id = ? AND chat_id = ?", linkID, chatID).

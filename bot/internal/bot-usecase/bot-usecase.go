@@ -1,116 +1,61 @@
 package botusecase
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/http"
-	"strconv"
 	"tbank/bot/config"
-	"tbank/bot/internal/models/requests"
-	"tbank/bot/internal/models/responses"
 	"tbank/bot/internal/storage"
+	"tbank/scrapper/api/proto/gen"
+	"google.golang.org/grpc"
 )
-
-
-var (
-	ErrCodeUnknown = fmt.Errorf("response code unknown")
-)
-
 
 type UseCase interface {
-	RegisterChat(сtx context.Context, id int64) 												error
-	DeleteChat(ctx context.Context, id int64) 													error 
+	RegisterChat(сtx context.Context, id int64) 												(*gen.RegisterChatResponse, error)
+	DeleteChat(ctx context.Context, id int64) 													(*gen.DeleteChatResponse, error) 
 	Help(ctx context.Context)																	error 
-	AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) 	(*responses.LinkResponse, error)
-	RemoveLink(ctx context.Context, chatID int64, link string) 									(*responses.LinkResponse, error)
-	ListLinks(ctx context.Context, chatID int64) 												(*responses.ListLinksResponse, error) 
+	AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) 	(*gen.LinkResponse, error)
+	RemoveLink(ctx context.Context, chatID int64, link string) 									(*gen.LinkResponse, error)
+	ListLinks(ctx context.Context, chatID int64) 												(*gen.ListLinksResponse, error) 
 }
 
 
 type UseCaseImpl struct {
 	config 		*config.Config
-	client 		http.Client
+	client 		gen.ScrapperClient
 	logger 		*slog.Logger
-	storage storage.Storage
+	storage 	storage.Storage
 }
 
-func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog.Logger) *UseCaseImpl {
+func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog.Logger) (*UseCaseImpl, error) {
+
+	host := config.ScrapperService.Host
+	port := config.ScrapperService.Port
+
+	connScrapper, err := grpc.NewClient(fmt.Sprintf("%s:%s", host, port),
+										grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	client := gen.NewScrapperClient(connScrapper)
+
 	return &UseCaseImpl{
 		config: config,
 		storage: storage,
 		logger: logger,
-	}
+		client: client,
+	}, nil
 }
 
-func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64) error {
 
-	url := fmt.Sprintf("%s:%s/tg-chat/%d", uc.config.ScrapperService.Host, uc.config.ScrapperService.Port, chatID)
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := uc.client.Do(req)
-	if err != nil {
-		return err
-	}
-	
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusBadRequest:
-
-		var errorResponse responses.ApiErrorResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return err
-		}
-		return fmt.Errorf("error - %s", errorResponse.Description)
-	default:
-		return ErrCodeUnknown
-	}
+func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64) (*gen.RegisterChatResponse, error) {
+	return uc.client.RegisterChat(ctx, &gen.RegisterChatRequest{Id: chatID})
 }
 
-func (uc *UseCaseImpl) DeleteChat(ctx context.Context, chatID int64) error {
-	url := fmt.Sprintf("%s:%s/tg-chat/%d", uc.config.ScrapperService.Host, uc.config.ScrapperService.Port, chatID)
 
-	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := uc.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusBadRequest:
-		var errorResponse responses.ApiErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return fmt.Errorf("failed to decode error response: %w", err)
-		}
-		return fmt.Errorf("bad request: %s", errorResponse.Description)
-
-	case http.StatusNotFound:
-		var errorResponse responses.ApiErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return fmt.Errorf("failed to decode error response: %w", err)
-		}
-		return fmt.Errorf("chat not found: %s", errorResponse.Description)
-
-	default:
-		return ErrCodeUnknown
-	}
+func (uc *UseCaseImpl) DeleteChat(ctx context.Context, chatID int64) (*gen.DeleteChatResponse, error) {
+	return uc.client.DeleteChat(ctx, &gen.DeleteChatRequest{Id: chatID})
 }
 
 
@@ -118,152 +63,24 @@ func (uc *UseCaseImpl) Help(ctx context.Context) error {
 	return nil
 }
 
-func (uc *UseCaseImpl) AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) (*responses.LinkResponse, error) {
-	url := fmt.Sprintf("%s:%s/links", uc.config.ScrapperService.Host, uc.config.ScrapperService.Port)
-
-	addLinkRequest := requests.AddLinkRequest{
+func (uc *UseCaseImpl) AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) (*gen.LinkResponse, error) {
+	return uc.client.AddLink(ctx, &gen.AddLinkRequest{
+		TgChatId: chatID,
 		Link: link,
 		Tags: tags,
 		Filters: filters,
-	}
-
-	body, err := json.Marshal(addLinkRequest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Tg-Chat-Id", strconv.FormatInt(chatID, 10))
-
-	resp, err := uc.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-
-	case http.StatusOK:
-		var response responses.LinkResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
-		}
-
-		return &response, nil
-
-	case http.StatusBadRequest:
-		var errorResponse responses.ApiErrorResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, err
-		}
-
-		return nil, fmt.Errorf("error - %s", errorResponse.Description)
-
-	default:
-		return nil, ErrCodeUnknown
-	}
+	})
 }
 
-func (uc *UseCaseImpl) RemoveLink(ctx context.Context, chatID int64, link string) (*responses.LinkResponse, error) {
-	url := fmt.Sprintf("%s:%s/links", uc.config.ScrapperService.Host, uc.config.ScrapperService.Port)
-
-	removeLinkRequest := requests.RemoveLinkRequest{
+func (uc *UseCaseImpl) RemoveLink(ctx context.Context, chatID int64, link string) (*gen.LinkResponse, error) {
+	return uc.client.RemoveLink(ctx, &gen.RemoveLinkRequest{
+		TgChatId: chatID,
 		Link: link,
-	}
-
-	body, err := json.Marshal(removeLinkRequest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "DELETE", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Tg-Chat-Id", strconv.FormatInt(chatID, 10))
-
-	resp, err := uc.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		var response responses.LinkResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
-		}
-		return &response, nil
-
-	case http.StatusBadRequest:
-		var errorResponse responses.ApiErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error - %s", errorResponse.Description)
-
-	case http.StatusNotFound:
-		var errorResponse responses.ApiErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("link not found - %s", errorResponse.Description)
-
-	default:
-		return nil, ErrCodeUnknown
-	}
+	})
 }
 
-func (uc *UseCaseImpl) ListLinks(ctx context.Context, chatID int64) (*responses.ListLinksResponse, error) {
-
-	url := fmt.Sprintf("%s:%s/links", uc.config.ScrapperService.Host, uc.config.ScrapperService.Port)
-
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Tg-Chat-Id", strconv.FormatInt(chatID, 10))
-
-	resp, err := uc.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-
-		var response responses.ListLinksResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
-		
-		}
-		return &response, nil
-
-	case http.StatusBadRequest:
-
-		var errorResponse responses.ApiErrorResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return nil, err
-		}
-
-		return nil, fmt.Errorf("error - %s", errorResponse.Description)
-	default:
-
-		return nil, ErrCodeUnknown
-	}
+func (uc *UseCaseImpl) ListLinks(ctx context.Context, chatID int64) (*gen.ListLinksResponse, error) {
+	return uc.client.GetLinks(ctx, &gen.GetLinksRequest{
+		TgChatId: chatID,
+	})
 }

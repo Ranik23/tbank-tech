@@ -45,7 +45,7 @@ func MessageHandler(usecase botusecase.UseCase, users *sync.Map) telebot.Handler
 			if err != nil {
 				return c.Send(fmt.Sprintf("Ошибка: %v", err))
 			}
-			return c.Send(fmt.Sprintf("Ссылка `%s` успешно отозвана!", response.URL))
+			return c.Send(fmt.Sprintf("Ссылка `%s` успешно отозвана!", response.Url))
         case StateWaitingForLinkLINK:
             user.link = text
             user.state = StateWaitingForTagsLINK
@@ -66,7 +66,7 @@ func MessageHandler(usecase botusecase.UseCase, users *sync.Map) telebot.Handler
             if err != nil {
                 return c.Send(fmt.Sprintf("Ошибка: %v", err))
             }
-            return c.Send(fmt.Sprintf("Ссылка '%s' успешно добавлена!", response.URL))
+            return c.Send(fmt.Sprintf("Ссылка '%s' успешно добавлена!", response.Url))
         }
 
         return nil
