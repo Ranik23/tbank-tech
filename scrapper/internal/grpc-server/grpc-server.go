@@ -13,8 +13,11 @@ type ScrapperServer struct {
 	storage storage.Storage
 }
 
-func NewScrapperServer() *ScrapperServer {
-	return &ScrapperServer{}
+func NewScrapperServer(usecase usecase.UseCase, storage storage.Storage) *ScrapperServer {
+	return &ScrapperServer{
+		usecase: usecase,
+		storage: storage,
+	}
 }
 
 func (s *ScrapperServer) RegisterChat(ctx context.Context, req *gen.RegisterChatRequest) (*gen.RegisterChatResponse, error) {

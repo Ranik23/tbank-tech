@@ -16,10 +16,16 @@ type DataBaseConfig struct {
 	DBName 		string					
 }
 
+type BotServerConfig struct {
+	Host string
+	Port string
+}
+
 
 type Config struct {
-	ScrapperServer ScrapperServerConfig
+	ScrapperServer 		ScrapperServerConfig
 	DataBase			DataBaseConfig
+	Bot					BotServerConfig
 
 }
 
@@ -34,6 +40,10 @@ func LoadConfig() (*Config, error) {
 		ScrapperServer: ScrapperServerConfig{
 			Host: viper.GetString("SCRAPPER_SERVICE_HOST"),
 			Port: viper.GetString("SCRAPPER_SERVICE_PORT"),
+		},
+		Bot: BotServerConfig{
+			Host: viper.GetString("TELERGAM_BOT_HOST"),
+			Port: viper.GetString("TELEGRAM_BOT_PORT"),
 		},
 	}, nil
 }

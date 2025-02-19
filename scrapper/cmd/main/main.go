@@ -1,7 +1,6 @@
 package main
 
 import (
-	"tbank/scrapper/config"
 	"tbank/scrapper/internal/app"
 )
 
@@ -9,13 +8,10 @@ import (
 
 func main() {
 
-	config, err := config.LoadConfig()
+	app, err := app.NewApp()
 	if err != nil {
 		panic(err)
 	}
-
-	app := app.NewApp(config)
-
 
 	if err := app.Run(); err != nil {
 		panic(err)

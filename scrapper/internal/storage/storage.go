@@ -40,7 +40,7 @@ func NewStorageImpl(cfg *config.Config) (*StorageImpl, error) {
 	}, nil
 }
 
-func (s *StorageImpl) GetURLs(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
+func (s *StorageImpl) GetURLS(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
 	var links []dbmodels.Link
 
 	err := s.db.WithContext(ctx).
