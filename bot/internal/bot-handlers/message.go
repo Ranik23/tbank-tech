@@ -7,6 +7,7 @@ import (
 	"sync"
 	botusecase "tbank/bot/internal/bot-usecase"
 
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/telebot.v3"
 )
 
@@ -59,6 +60,19 @@ func MessageHandler(usecase botusecase.UseCase, users *sync.Map) telebot.Handler
                 return c.Send(fmt.Sprintf("Ошибка: %v", err))
             }
             return c.Send(fmt.Sprintf("Ссылка '%s' успешно добавлена!", response.Url))
+        case StateWaitingForTheToken:
+
+            hashedToken, err := bcrypt.GenerateFromPassword([]byte(text), bcrypt.DefaultCost)
+            if err != nil {
+                return c.Send(fmt.Sprintf("Ошибка %v", err))
+            }
+
+            response, err := usecase.RegisterChat(context.Background(), userID, hashedToken)
+            if err != nil {
+                return c.Send(fmt.Sprintf("Ошибка %v", err))
+            }
+
+            return c.Send(response.GetMessage())
         }
 
         return nil

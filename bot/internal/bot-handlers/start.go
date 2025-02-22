@@ -1,8 +1,6 @@
 package bothandlers
 
 import (
-	"context"
-	"fmt"
 	"sync"
 	"tbank/bot/internal/bot-usecase"
 
@@ -12,14 +10,20 @@ import (
 
 func StartHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		chatID := c.Chat().ID
+		userID := c.Sender().ID
 
-		response, err := usecase.RegisterChat(context.Background(), chatID);
-		if err != nil {
-			return c.Send(fmt.Sprintf("Ошибка: %v", err))
+		userRaw, exists := users.Load(userID)
+		var user *User
+		if !exists {
+			user = &User{state: StateFinished}
+			users.Store(userID, user)
+		} else {
+			user = userRaw.(*User)
 		}
-		c.Send(response.GetMessage())
 
-		return nil
+		user.state = StateWaitingForTheToken
+		users.Store(userID, user)
+
+		return c.Send("Введите персональный токен")
 	}
 }

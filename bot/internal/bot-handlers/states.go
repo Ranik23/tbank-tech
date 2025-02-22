@@ -7,6 +7,7 @@ const (
 	StateWaitingForFiltersLINK = 2
 	StateWaitingForTagsLINK = 3
 	StateWaitingForLinkUNLINK = 4
+	StateWaitingForTheToken = 5
 )
 
 

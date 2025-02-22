@@ -4,6 +4,10 @@ protoc:
 protoc-swagger:
 	protoc -I . -I scrapper/api/third_party --go_out=. --go-grpc_out=. --grpc-gateway_out=. --openapiv2_out=. scrapper/api/proto/scrapper.proto
 
+
+protoc-bot:
+	protoc -I . -I bot/api/third_party --go_out=. --go-grpc_out=. --grpc-gateway_out=. --openapiv2_out=. bot/api/proto/server.proto
+
 all: bot scrapper
 
 bot:

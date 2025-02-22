@@ -11,7 +11,7 @@ import (
 )
 
 type UseCase interface {
-	RegisterChat(ctx context.Context, id int64) 												(*gen.RegisterChatResponse, error)
+	RegisterChat(ctx context.Context, id int64, hashedToken []byte) 							(*gen.RegisterChatResponse, error)
 	DeleteChat(ctx context.Context, id int64) 													(*gen.DeleteChatResponse, error) 
 	Help(ctx context.Context)																	error 
 	AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) 	(*gen.LinkResponse, error)
@@ -49,7 +49,8 @@ func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog
 	}, nil
 }
 
-func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64) (*gen.RegisterChatResponse, error) {
+// TODO: добавить токен в реализацию
+func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64, hashedToken []byte) (*gen.RegisterChatResponse, error) {
 	uc.logger.Info("Registering chat", slog.Int64("chatID", chatID))
 
 	resp, err := uc.client.RegisterChat(ctx, &gen.RegisterChatRequest{Id: chatID})

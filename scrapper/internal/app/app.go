@@ -10,12 +10,13 @@ import (
 	"syscall"
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
-	grpcserver "tbank/scrapper/internal/grpc-server"
 	"tbank/scrapper/internal/gateway"
+	grpcserver "tbank/scrapper/internal/grpc-server"
+	"tbank/scrapper/internal/hub"
+
 	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
 
-	gocron "github.com/go-co-op/gocron/v2"
 	"google.golang.org/grpc"
 )
 
@@ -23,6 +24,7 @@ type App struct {
 	grpcServer *grpc.Server
 	config     *config.Config
 	logger     *slog.Logger
+	hub		   *hub.Hub
 }
 
 func NewApp() (*App, error) {
@@ -41,14 +43,12 @@ func NewApp() (*App, error) {
 	// 	return nil, err
 	// }
 
-	scheduler, err := gocron.NewScheduler()
+	hub, err := hub.NewHub(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	scheduler.Start()
-
-	usecase , err := usecase.NewUseCaseImpl(cfg, nil, scheduler)
+	
+	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub)
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ func RunGateway(ctx context.Context, grpcAddr string, httpAddr string) error {
 		return err
 	}
 
-	fmt.Println("адрес - ", httpAddr)
+	fmt.Println("Адрес - ", httpAddr)
 	slog.Info("Запуск прокси-сервера", slog.String("httpAddr", httpAddr))
 	return http.ListenAndServe(httpAddr, mux)
 }

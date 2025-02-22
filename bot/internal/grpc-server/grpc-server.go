@@ -21,8 +21,8 @@ func NewBotServer(usecase usecase.UseCase, bot *telebot.Bot) *BotServer {
 	}
 }
 
-func (bs *BotServer) SendUpdate(ctx context.Context, message *gen.UpdateMessage) (*gen.Response, error) {
-	return &gen.Response{
-		Message: "Succesfully",
+func (bs *BotServer) SendUpdate(ctx context.Context, message *gen.CommitUpdate) (*gen.CommitUpdateAnswer, error) {
+	return &gen.CommitUpdateAnswer{
+		Status: "Succesfully",
 	}, nil
 }
