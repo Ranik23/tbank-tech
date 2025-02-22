@@ -15,12 +15,10 @@ func UnTrackHandler(usecase botusecase.UseCase, users *sync.Map) telebot.Handler
 		userRaw, exists := users.Load(userID)
 		var user *User
 		if !exists {
-			user = &User{state: StateFinished}
-			users.Store(userID, user)
-		} else {
-			user = userRaw.(*User)
-		}
-
+			return c.Send("Вам нужно зарегестрироваться. Используйте команду /start")
+		} 
+		
+		user = userRaw.(*User)
 		user.state = StateWaitingForLinkUNLINK
 		users.Store(userID, user)
 		return c.Send("Введите ссылку, которую хотите перестать отслеживать")

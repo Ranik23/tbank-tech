@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"tbank/scrapper/internal/db/models"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -30,8 +31,8 @@ func NewClient(token string, updateCh chan *github.RepositoryCommit) *Client {
 }
 
 
-func (c *Client) Search(ctx context.Context, url string) error {
-	owner, repo, err := c.parseGitHubURL(url)
+func (c *Client) Search(ctx context.Context, link models.Link) error {
+	owner, repo, err := c.parseGitHubURL(link.Url)
 	if err != nil {
 		return fmt.Errorf("invalid url format")
 	}

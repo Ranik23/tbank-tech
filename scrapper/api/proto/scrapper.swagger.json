@@ -211,18 +211,6 @@
         },
         "link": {
           "type": "string"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "filters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
     },
@@ -243,18 +231,6 @@
         },
         "url": {
           "type": "string"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "filters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
     },

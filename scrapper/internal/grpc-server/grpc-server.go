@@ -31,7 +31,7 @@ func (s *ScrapperServer) DeleteChat(ctx context.Context, req *gen.DeleteChatRequ
 func (s *ScrapperServer) GetLinks(ctx context.Context, req *gen.GetLinksRequest) (*gen.ListLinksResponse, error) {
 	return &gen.ListLinksResponse{
 		Links: []*gen.LinkResponse{
-			{Id: 1, Url: "https://example.com", Tags: []string{"новости"}, Filters: []string{"акции"}},
+			{Id: 1, Url: "https://example.com"},
 		},
 		Size: 1,
 	}, nil
@@ -41,8 +41,6 @@ func (s *ScrapperServer) AddLink(ctx context.Context, req *gen.AddLinkRequest) (
 	return &gen.LinkResponse{
 		Id:      123,
 		Url:     req.Link,
-		Tags:    req.Tags,
-		Filters: req.Filters,
 	}, nil
 }
 

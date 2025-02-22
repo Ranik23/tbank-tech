@@ -47,6 +47,8 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	hub.Start()
 	
 	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub)
 	if err != nil {
@@ -61,6 +63,7 @@ func NewApp() (*App, error) {
 		grpcServer: grpcServer,
 		config:     cfg,
 		logger:     logger,
+		hub: hub,
 	}, nil
 }
 

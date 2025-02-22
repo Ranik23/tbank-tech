@@ -13,14 +13,21 @@ import (
 func ListHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		chatID := c.Chat().ID
+		userID := c.Sender().ID
+
+		_, exists := users.Load(userID)
+		if !exists {
+			return c.Send("Вам нужно зарегестрироваться. Используйте команду /start")
+		}
 		
-		responses, err := usecase.ListLinks(context.Background(), chatID)
+		responses, err := usecase.ListLinks(context.Background(), chatID) // мне оперировать через чатАЙДИ или через USerid
 		if err != nil {
 			return c.Send(fmt.Sprintf("Ошибка: %v", err))
 		}
 		for _, link := range responses.Links {
 			c.Send(link)
 		}
+
 		return nil
 	}
 }

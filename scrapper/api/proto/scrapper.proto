@@ -66,8 +66,6 @@ message GetLinksRequest {
 message AddLinkRequest {
   int64 tg_chat_id = 1;
   string link = 2;
-  repeated string tags = 3;
-  repeated string filters = 4;
 }
 
 message RemoveLinkRequest {
@@ -78,8 +76,7 @@ message RemoveLinkRequest {
 message LinkResponse {
   int64 id = 1;
   string url = 2;
-  repeated string tags = 3;
-  repeated string filters = 4;
+
 }
 
 message ListLinksResponse {

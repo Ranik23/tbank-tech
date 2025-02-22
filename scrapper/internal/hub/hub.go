@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"tbank/bot/api/proto/gen"
 	"tbank/scrapper/config"
+	"tbank/scrapper/internal/db/models"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -15,8 +17,8 @@ import (
 
 // TODO: РАЗОБРАТЬСЯ С КОНТЕКСТОМ
 type Hub struct {
-	linkChats 			map[string][]int64
-	linkCancelFunc		map[string]context.CancelFunc
+	linkChats 			map[models.Link][]int64
+	linkCancelFunc		map[models.Link]context.CancelFunc
 
 	grpcBotClient 		gen.BotClient
 	config 				*config.Config
@@ -45,7 +47,7 @@ func NewHub(cfg *config.Config) (*Hub, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Hub{
-		linkChats: make(map[string][]int64),
+		linkChats: make(map[models.Link][]int64),
 		grpcBotClient: grpcBotClient,
 		config: cfg,
 		updatesCh: make(chan *github.RepositoryCommit),
@@ -56,39 +58,44 @@ func NewHub(cfg *config.Config) (*Hub, error) {
 }
 
 
-func (s *Hub) AddJob(url string, chatID int64) {
+func (s *Hub) AddTrack(link models.Link, chatID int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.linkChats[url]; !exists {
-		s.linkChats[url] = []int64{chatID}
+	if _, exists := s.linkChats[link]; !exists {
+
+		s.linkChats[link] = []int64{chatID}
 
 		c := NewClient(s.token, s.updatesCh)
 
 		contextWithCancel, cancel := context.WithCancel(context.Background())
-		s.linkCancelFunc[url] = cancel
-		go c.Search(contextWithCancel, url)
+		s.linkCancelFunc[link] = cancel
+
+		go c.Search(contextWithCancel, link)
+
 	} else {
-		s.linkChats[url] = append(s.linkChats[url], chatID)
+		if !slices.Contains(s.linkChats[link], chatID) {
+			s.linkChats[link] = append(s.linkChats[link], chatID)
+		}
 	}
 }
 
 
-func (s *Hub) RemoveJob(url string, chatID int64) error {
+func (s *Hub) RemoveTrack(link models.Link, chatID int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	ids, exists := s.linkChats[url]
+	ids, exists := s.linkChats[link]
 	if !exists {
 		return fmt.Errorf("no link found")
 	}
 
 	if len(ids) == 1 && ids[0] == chatID {
-		if cancelFunc, exists := s.linkCancelFunc[url]; exists {
+		if cancelFunc, exists := s.linkCancelFunc[link]; exists {
 			cancelFunc() 
-			delete(s.linkCancelFunc, url)
+			delete(s.linkCancelFunc, link)
 		}
-		delete(s.linkChats, url)
+		delete(s.linkChats, link)
 		return nil
 	}
 
@@ -100,13 +107,13 @@ func (s *Hub) RemoveJob(url string, chatID int64) error {
 	}
 
 	if len(newIDS) == 0 {
-		if cancelFunc, ok := s.linkCancelFunc[url]; ok {
+		if cancelFunc, ok := s.linkCancelFunc[link]; ok {
 			cancelFunc()
-			delete(s.linkCancelFunc, url)
+			delete(s.linkCancelFunc, link)
 		}
-		delete(s.linkChats, url)
+		delete(s.linkChats, link)
 	} else {
-		s.linkChats[url] = newIDS
+		s.linkChats[link] = newIDS
 	}
 
 	return nil
@@ -134,7 +141,6 @@ func (s *Hub) Start() error {
 				if err != nil {
 					slog.Error("failed to send update", slog.String("error", err.Error()))
 				}
-
 			case <-s.stopCh:
 				slog.Info("Stopping updates processing")
 				return
@@ -149,6 +155,7 @@ func (s *Hub) Stop() error {
 	for _, cancel := range s.linkCancelFunc {
 		cancel()
 	}
+	s.stopCh <- struct{}{}
 	close(s.updatesCh)
 	return nil
 }

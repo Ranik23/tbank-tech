@@ -8,6 +8,7 @@ const (
 	StateWaitingForTagsLINK = 3
 	StateWaitingForLinkUNLINK = 4
 	StateWaitingForTheToken = 5
+	StateWaitingForTheCommand = 6
 )
 
 

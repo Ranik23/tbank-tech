@@ -87,8 +87,6 @@ func (uc *UseCaseImpl) AddLink(ctx context.Context, chatID int64, link string, t
 	resp, err := uc.client.AddLink(ctx, &gen.AddLinkRequest{
 		TgChatId: chatID,
 		Link:     link,
-		Tags:     tags,
-		Filters:  filters,
 	})
 	if err != nil {
 		uc.logger.Error("failed to add link", slog.Int64("chatID", chatID), slog.String("link", link), slog.String("error", err.Error()))

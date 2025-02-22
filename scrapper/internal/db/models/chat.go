@@ -8,5 +8,5 @@ import (
 
 type Chat struct {
 	gorm.Model
-	ChatID	uint		`gorm:"primaryKey;column:chat_id"`
+	ChatID	int64		`gorm:"primaryKey;column:chat_id"`
 }

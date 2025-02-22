@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"tbank/scrapper/config"
 	connection "tbank/scrapper/internal/db"
 	dbmodels "tbank/scrapper/internal/db/models"
@@ -10,18 +11,14 @@ import (
 )
 
 type Storage interface {
-	CreateChat(ctx context.Context, chatID uint) 						error
-	CreateFilter(ctx context.Context, name string) 						error
-	CreateTag(ctx context.Context, name string) 						error
-	CreateLinkChat(ctx context.Context, linkID uint, chatID uint) 		error
-	CreateLinkFilter(ctx context.Context, linkID uint, filterID uint) 	error
-	CreateLinkTag(ctx context.Context, linkID uint, tagID uint) 		error
-
-	DeleteChat(ctx context.Context, chatID uint) 						error
-	DeleteLink(ctx context.Context, linkID uint) 						error 
-	DeleteLinkChat(ctx context.Context, linkID uint, chatID uint) 		error
-
-	GetURLS(ctx context.Context, chatID uint) 							([]dbmodels.Link, error)
+	CreateChat(ctx context.Context, chatID int64)                         error
+	CreateLinkChat(ctx context.Context, linkID int64, chatID int64)       error
+	DeleteLinkChat(ctx context.Context, linkID int64, chatID int64)       error
+	GetLinks(ctx context.Context, chatID int64)                           ([]dbmodels.Link, error)
+	DeleteChat(ctx context.Context, chatID int64)                         error
+	DeleteLink(ctx context.Context, linkID int64)                         error
+	FindLinkID(ctx context.Context, link dbmodels.Link)                   (int64, error)
+	CreateLink(ctx context.Context, link dbmodels.Link) 				  error
 }
 
 type StorageImpl struct {
@@ -40,64 +37,172 @@ func NewStorageImpl(cfg *config.Config) (*StorageImpl, error) {
 	}, nil
 }
 
-func (s *StorageImpl) GetURLS(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
+
+func (s *StorageImpl) CreateLink(ctx context.Context, link dbmodels.Link) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	if err := tx.Model(&link).Create(&link).Error; err != nil {
+		defer tx.Rollback()
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil // не выводим ошибку
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *StorageImpl) FindLinkID(ctx context.Context, link dbmodels.Link) (int64, error) {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	var l dbmodels.Link
+	if err := tx.WithContext(ctx).Where("url = ?", link.Url).Find(&l).Error; err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	return int64(l.ID), tx.Commit().Error
+}
+
+func (s *StorageImpl) GetLinks(ctx context.Context, chatID int64) ([]dbmodels.Link, error) {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
 	var links []dbmodels.Link
 
-	err := s.db.WithContext(ctx).
-		Joins("JOIN link_chats ON link_chats.link_id = links.id").
-		Where("link_chats.chat_id = ?", chatID).
-		Find(&links).Error
 
+	var linkChats []dbmodels.LinkChat
+	err := tx.WithContext(ctx).Model(&linkChats).Where("chat_id = ?", chatID).Find(&linkChats).Error
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	return links, nil
+	var linkIDs []int64
+	for _, lc := range linkChats {
+		linkIDs = append(linkIDs, int64(lc.LinkID))
+	}
+
+	if len(linkIDs) == 0 {
+		tx.Rollback()
+		return nil, nil
+	}
+
+	err = tx.Where("id IN (?)", linkIDs).Find(&links).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return links, tx.Commit().Error
 }
 
-func (s *StorageImpl) DeleteChat(ctx context.Context, chatID uint) error {
-	return s.db.WithContext(ctx).Where("id = ?", chatID).Delete(&dbmodels.Chat{}).Error
+func (s *StorageImpl) DeleteChat(ctx context.Context, chatID int64) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	err := tx.WithContext(ctx).Where("id = ?", chatID).Delete(&dbmodels.Chat{}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
-func (s *StorageImpl) DeleteLink(ctx context.Context, linkID uint) error {
-	return s.db.WithContext(ctx).Where("id = ?", linkID).Delete(&dbmodels.Link{}).Error
+func (s *StorageImpl) DeleteLink(ctx context.Context, linkID int64) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	err := tx.WithContext(ctx).Where("id = ?", linkID).Delete(&dbmodels.Link{}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
-func (s *StorageImpl) DeleteLinkChat(ctx context.Context, linkID uint, chatID uint) error {
-	return s.db.WithContext(ctx).
+func (s *StorageImpl) DeleteLinkChat(ctx context.Context, linkID int64, chatID int64) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	err := tx.WithContext(ctx).
 		Where("link_id = ? AND chat_id = ?", linkID, chatID).
-		Delete(&dbmodels.LinkChat{}).Error
+		Delete(&dbmodels.LinkChat{}).Error // ЧТОБЫ ДАННЫЕ КОТОРЫЕ МЫ ПРОЧИТАЛИ НЕ БЫЛИ ИЗМЕНЕНЫ ДРУГИМ, НАПРИМЕР УДАЛЕНЫ
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
-func (s *StorageImpl) CreateLinkChat(ctx context.Context, linkID uint, chatID uint) error {
+func (s *StorageImpl) CreateLinkChat(ctx context.Context, linkID int64, chatID int64) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	LinkChat := dbmodels.LinkChat{
 		LinkID: linkID,
 		ChatID: chatID,
 	}
-	return s.db.WithContext(ctx).Create(&LinkChat).Error
+
+	if err := tx.WithContext(ctx).Create(&LinkChat).Error; err != nil {
+		defer tx.Rollback()
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil
+		}
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
-func (s *StorageImpl) CreateChat(ctx context.Context, chatID uint) error {
+func (s *StorageImpl) CreateChat(ctx context.Context, chatID int64) error {
+	tx := s.db.Begin()
+
+	tx.Exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	chat := dbmodels.Chat{ChatID: chatID}
-	return s.db.WithContext(ctx).Create(&chat).Error
-}
+	if err := tx.WithContext(ctx).Create(&chat).Error; err != nil {
+		defer tx.Rollback()
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil
+		}
+		return err
+	}
 
-func (s *StorageImpl) CreateFilter(ctx context.Context, name string) error {
-	filter := dbmodels.Filter{Name: name}
-	return s.db.WithContext(ctx).Create(&filter).Error
-}
-
-func (s *StorageImpl) CreateTag(ctx context.Context, name string) error {
-	tag := dbmodels.Tag{Name: name}
-	return s.db.WithContext(ctx).Create(&tag).Error
-}
-
-func (s *StorageImpl) CreateLinkFilter(ctx context.Context, linkID uint, filterID uint) error {
-	linkFilter := dbmodels.LinkFilters{LinkID: linkID, FilterID: filterID}
-	return s.db.WithContext(ctx).Create(&linkFilter).Error
-}
-
-func (s *StorageImpl) CreateLinkTag(ctx context.Context, linkID uint, tagID uint) error {
-	linkTag := dbmodels.LinkTags{LinkID: linkID, TagID: tagID}
-	return s.db.WithContext(ctx).Create(&linkTag).Error
+	return tx.Commit().Error
 }

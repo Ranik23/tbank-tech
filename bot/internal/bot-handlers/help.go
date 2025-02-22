@@ -12,6 +12,7 @@ type User struct {
 	link    string
 	tags    []string
 	filters []string
+	token	string
 }
 
 func HelpHandler(botUseCase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
