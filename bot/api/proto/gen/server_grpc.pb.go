@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Bot_SendUpdate_FullMethodName = "/server.Bot/SendUpdate"
+	Bot_SendCommitUpdate_FullMethodName = "/server.Bot/SendCommitUpdate"
 )
 
 // BotClient is the client API for Bot service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BotClient interface {
-	SendUpdate(ctx context.Context, in *UpdateMessage, opts ...grpc.CallOption) (*Response, error)
+	SendCommitUpdate(ctx context.Context, in *CommitUpdate, opts ...grpc.CallOption) (*CommitUpdateAnswer, error)
 }
 
 type botClient struct {
@@ -37,10 +37,10 @@ func NewBotClient(cc grpc.ClientConnInterface) BotClient {
 	return &botClient{cc}
 }
 
-func (c *botClient) SendUpdate(ctx context.Context, in *UpdateMessage, opts ...grpc.CallOption) (*Response, error) {
+func (c *botClient) SendCommitUpdate(ctx context.Context, in *CommitUpdate, opts ...grpc.CallOption) (*CommitUpdateAnswer, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Response)
-	err := c.cc.Invoke(ctx, Bot_SendUpdate_FullMethodName, in, out, cOpts...)
+	out := new(CommitUpdateAnswer)
+	err := c.cc.Invoke(ctx, Bot_SendCommitUpdate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *botClient) SendUpdate(ctx context.Context, in *UpdateMessage, opts ...g
 // All implementations must embed UnimplementedBotServer
 // for forward compatibility.
 type BotServer interface {
-	SendUpdate(context.Context, *UpdateMessage) (*Response, error)
+	SendCommitUpdate(context.Context, *CommitUpdate) (*CommitUpdateAnswer, error)
 	mustEmbedUnimplementedBotServer()
 }
 
@@ -62,8 +62,8 @@ type BotServer interface {
 // pointer dereference when methods are called.
 type UnimplementedBotServer struct{}
 
-func (UnimplementedBotServer) SendUpdate(context.Context, *UpdateMessage) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendUpdate not implemented")
+func (UnimplementedBotServer) SendCommitUpdate(context.Context, *CommitUpdate) (*CommitUpdateAnswer, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendCommitUpdate not implemented")
 }
 func (UnimplementedBotServer) mustEmbedUnimplementedBotServer() {}
 func (UnimplementedBotServer) testEmbeddedByValue()             {}
@@ -86,20 +86,20 @@ func RegisterBotServer(s grpc.ServiceRegistrar, srv BotServer) {
 	s.RegisterService(&Bot_ServiceDesc, srv)
 }
 
-func _Bot_SendUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateMessage)
+func _Bot_SendCommitUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitUpdate)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BotServer).SendUpdate(ctx, in)
+		return srv.(BotServer).SendCommitUpdate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Bot_SendUpdate_FullMethodName,
+		FullMethod: Bot_SendCommitUpdate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BotServer).SendUpdate(ctx, req.(*UpdateMessage))
+		return srv.(BotServer).SendCommitUpdate(ctx, req.(*CommitUpdate))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +112,8 @@ var Bot_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BotServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SendUpdate",
-			Handler:    _Bot_SendUpdate_Handler,
+			MethodName: "SendCommitUpdate",
+			Handler:    _Bot_SendCommitUpdate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

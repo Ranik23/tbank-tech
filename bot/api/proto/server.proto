@@ -5,33 +5,17 @@ package server;
 option go_package = "/proto/gen;gen";
 
 message CommitUpdate {
-    string commit_id = 1;         // ID коммита
+    string sha = 1;
     string author = 2;            // Автор коммита
     string message = 3;           // Сообщение коммита
     string timestamp = 4;         // Время коммита
-    string url = 5;               // Ссылка на коммит
+    string url = 5;               // Ссылка на репо
 }
 
-
-message ReleaseUpdate {
-    string release_id = 1;        // ID релиза
-    string version = 2;           // Версия релиза
-    string description = 3;       // Описание релиза
-    string timestamp = 4;         // Время релиза
-    string url = 5;               // Ссылка на релиз
-}
-
-message Response {
-    string message = 1;
-}
-
-message UpdateMessage {
-    oneof update_type {
-        CommitUpdate commit = 1;
-        ReleaseUpdate release = 2;
-    }
+message CommitUpdateAnswer {
+    string status = 1;
 }
 
 service Bot {
-    rpc SendUpdate(UpdateMessage) returns (Response);
+    rpc SendCommitUpdate(CommitUpdate) returns (CommitUpdateAnswer);
 }
