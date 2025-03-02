@@ -4,7 +4,6 @@ import (
 	"context"
 	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/db/models"
-	"tbank/scrapper/internal/hub"
 	"tbank/scrapper/internal/storage"
 )
 
@@ -21,14 +20,12 @@ type UseCase interface {
 type UseCaseImpl struct {
 	cfg 		*config.Config
 	storage 	storage.Storage
-	hub			*hub.Hub
 }
 
-func NewUseCaseImpl(cfg *config.Config, storage storage.Storage, hub *hub.Hub) (*UseCaseImpl, error) {
+func NewUseCaseImpl(cfg *config.Config, storage storage.Storage) (*UseCaseImpl, error) {
 	return &UseCaseImpl{
 		cfg: cfg,
 		storage: storage,
-		hub: hub,
 	}, nil
 }
 

@@ -12,8 +12,6 @@ import (
 	"tbank/scrapper/config"
 	"tbank/scrapper/internal/gateway"
 	grpcserver "tbank/scrapper/internal/grpc-server"
-	"tbank/scrapper/internal/hub"
-
 	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
 
@@ -24,7 +22,6 @@ type App struct {
 	grpcServer *grpc.Server
 	config     *config.Config
 	logger     *slog.Logger
-	hub		   *hub.Hub
 }
 
 func NewApp() (*App, error) {
@@ -43,12 +40,12 @@ func NewApp() (*App, error) {
 	// 	return nil, err
 	// }
 
-	hub, err := hub.NewHub(cfg)
-	if err != nil {
-		return nil, err
-	}
+	// hub, err := hub.NewHub(cfg)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	
-	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub)
+	usecase , err := usecase.NewUseCaseImpl(cfg, nil)
 	if err != nil {
 		return nil, err
 	}
