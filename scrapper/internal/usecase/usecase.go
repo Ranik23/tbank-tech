@@ -4,25 +4,27 @@ import (
 	"context"
 	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/db/models"
+	"tbank/scrapper/internal/hub"
 	"tbank/scrapper/internal/storage"
 )
 
 
 
 type UseCase interface {
-	RegisterChat(ctx context.Context, chatID uint) 										error
-	DeleteChat(ctx context.Context, chatID uint) 										error
-	GetLinks(ctx context.Context, chatID uint) 											([]dbmodels.Link, error)
+	RegisterChat(ctx context.Context, chatID uint) 														error
+	DeleteChat(ctx context.Context, chatID uint) 														error
+	GetLinks(ctx context.Context, chatID uint) 															([]dbmodels.Link, error)
 	AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string, chatID int64) 	(*dbmodels.Link, error)
-	RemoveLink(ctx context.Context, linkID uint) 										error
+	RemoveLink(ctx context.Context, linkID uint) 														error
 }
 
 type UseCaseImpl struct {
+	hub 		*hub.Hub
 	cfg 		*config.Config
 	storage 	storage.Storage
 }
 
-func NewUseCaseImpl(cfg *config.Config, storage storage.Storage) (*UseCaseImpl, error) {
+func NewUseCaseImpl(cfg *config.Config, storage storage.Storage, hub *hub.Hub) (*UseCaseImpl, error) {
 	return &UseCaseImpl{
 		cfg: cfg,
 		storage: storage,

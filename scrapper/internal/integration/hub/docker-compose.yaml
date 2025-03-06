@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2182:2181"
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    ports:
+      - "9093:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL: PLAINTEXT
+      KAFKA_LISTENER_NAME_EXTERNAL: PLAINTEXT
+      KAFKA_LISTENER_INTERNAL: INSIDE://kafka:9092
+      KAFKA_LISTENER_NAME_INSIDE: INSIDE
+    depends_on:
+      - zookeeper

@@ -12,9 +12,13 @@ import (
 	"tbank/scrapper/config"
 	"tbank/scrapper/internal/gateway"
 	grpcserver "tbank/scrapper/internal/grpc-server"
+	"tbank/scrapper/internal/hub"
+	"tbank/scrapper/pkg/github"
+
 	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
 
+	"github.com/IBM/sarama"
 	"google.golang.org/grpc"
 )
 
@@ -40,12 +44,16 @@ func NewApp() (*App, error) {
 	// 	return nil, err
 	// }
 
-	// hub, err := hub.NewHub(cfg)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	
-	usecase , err := usecase.NewUseCaseImpl(cfg, nil)
+	producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	gitHubClient := github.NewRealGitHubClient()
+
+	hub := hub.NewHub(producer, logger, gitHubClient, "updates")
+
+	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub)
 	if err != nil {
 		return nil, err
 	}

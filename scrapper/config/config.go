@@ -1,7 +1,15 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"strings"
 
+	"github.com/spf13/viper"
+)
+
+
+type KafkaConfig struct {
+	Addresses []string
+}
 
 type ScrapperServerConfig struct {
 	Host string
@@ -33,6 +41,7 @@ type Config struct {
 	DataBase			DataBaseConfig
 	Bot					BotServerConfig
 	ScrapperServerHTTP 	ScrapperServerHTTPConfig
+	Kafka				KafkaConfig
 }
 
 func LoadConfig() (*Config, error) {
@@ -54,6 +63,9 @@ func LoadConfig() (*Config, error) {
 		ScrapperServerHTTP: ScrapperServerHTTPConfig{
 			Host: viper.GetString("SCRAPPER_SERVICE_HTTP_HOST"),
 			Port: viper.GetString("SCRAPPER_SERVICE_HTTP_PORT"),
+		},
+		Kafka: KafkaConfig{
+			Addresses: strings.Split(viper.GetString("KAFKA_ADDRESSES"), " "),
 		},
 	}, nil
 }
