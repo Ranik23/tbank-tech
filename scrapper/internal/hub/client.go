@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/google/go-github/v69/github"
 )
+
 type Client struct {
 	kafkaProducer   sarama.AsyncProducer
 	logger          *slog.Logger

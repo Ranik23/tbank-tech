@@ -3,18 +3,19 @@ package usecase
 import (
 	"context"
 	"tbank/scrapper/config"
-	dbmodels "tbank/scrapper/internal/db/models"
+	dbmodels "tbank/scrapper/internal/models"
 	"tbank/scrapper/internal/hub"
 	"tbank/scrapper/internal/storage"
 )
 
 
+//TODO
 
 type UseCase interface {
-	RegisterChat(ctx context.Context, chatID uint) 														error
-	DeleteChat(ctx context.Context, chatID uint) 														error
-	GetLinks(ctx context.Context, chatID uint) 															([]dbmodels.Link, error)
-	AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string, chatID int64) 	(*dbmodels.Link, error)
+	RegisterUser(ctx context.Context, userID uint, name string) 										error
+	DeleteUser(ctx context.Context, userID uint) 														error
+	GetLinks(ctx context.Context, userID uint) 															([]dbmodels.Link, error)
+	AddLink(ctx context.Context, link dbmodels.Link, userID int64) 										(*dbmodels.Link, error)
 	RemoveLink(ctx context.Context, linkID uint) 														error
 }
 
@@ -31,22 +32,32 @@ func NewUseCaseImpl(cfg *config.Config, storage storage.Storage, hub *hub.Hub) (
 	}, nil
 }
 
-func (u *UseCaseImpl) RegisterChat(ctx context.Context, chatID uint) error {
-	return u.storage.CreateChat(ctx, chatID)
+func (usecase *UseCaseImpl) RegisterUser(ctx context.Context, userID uint, name string) error {
+	return usecase.storage.CreateUser(ctx, userID, name)
 }
 
-func (u *UseCaseImpl) DeleteChat(ctx context.Context, chatID uint) error {
-	return u.storage.DeleteChat(ctx, chatID)
+func (usecase *UseCaseImpl) DeleteUser(ctx context.Context, userID uint) error {
+	return usecase.storage.DeleteUser(ctx, userID)
 }
 
-func (u *UseCaseImpl) GetLinks(ctx context.Context, chatID uint) ([]dbmodels.Link, error) {
-	return u.storage.GetURLS(ctx, chatID)
+func (usecase *UseCaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
+	return usecase.storage.GetURLS(ctx, userID)
 }
 
-func (u *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, tags []string, filters []string, chatID int64) (*dbmodels.Link, error) {
+func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID int64) (*dbmodels.Link, error) {
+	usecase.hub.AddTrack(link.Url)
+	usecase.storage.CreateLink(ctx, link.Url)
+
 	return nil, nil
 }
 
 func (u *UseCaseImpl) RemoveLink(ctx context.Context, linkID uint) error {
-	return u.storage.DeleteLink(ctx, linkID)
+
+	var link string
+
+	u.storage.
+
+
+	u.hub.RemoveTrack()
+	return nil
 }

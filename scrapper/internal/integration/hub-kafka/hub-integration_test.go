@@ -1,4 +1,4 @@
-package hub
+package hub_kafka_test
 
 import (
 	"encoding/json"
@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHub_Commits(t *testing.T) {
+func TestHub_CommitsSucces(t *testing.T) {
 
-	addresses := []string{"localhost:9093"}
+	addresses := []string{"0.0.0.0:9093"}
 
 	asyncProducer, err := sarama.NewAsyncProducer(addresses, nil)
 	if !assert.NoError(t, err) {
@@ -25,9 +25,11 @@ func TestHub_Commits(t *testing.T) {
 	}
 	defer asyncProducer.Close() 
 
+
+
+
 	ctrl := gomock.NewController(t)
 	mockGitHubClient := git.NewMockGitHubClient(ctrl)
-
 	mockGitHubClient.EXPECT().ListCommits(gomock.Any(), "test_owner", "test_repo", gomock.Any()).Return(
 		[]*github.RepositoryCommit{
 			{
@@ -38,19 +40,32 @@ func TestHub_Commits(t *testing.T) {
 			},
 		}, nil, nil).AnyTimes()
 
-	hub := hub.NewHub(asyncProducer, slog.Default(), mockGitHubClient, "test_topic")
 
+
+
+	hub := hub.NewHub(asyncProducer, slog.Default(), mockGitHubClient, "test_topic")
 	hub.AddTrack("https://github.com/test_owner/test_repo")
 
+
+
+
 	consumer, err := sarama.NewConsumer(addresses, nil)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		t.Fatalf("Failed to create a New Consumer: %v", err)
+	}
 	defer consumer.Close()
 
-	partitions, err := consumer.Partitions("test_topic")
 
+
+
+
+	partitions, err := consumer.Partitions("test_topic")
 	if !assert.NoError(t, err) {
-		t.Fatalf("error: %v", err)
+		t.Fatalf("Failed to get the partitions: %v", err)
 	}
+
+
+	
 
 	var wg sync.WaitGroup
 	errorCh := make(chan error, 1)  
@@ -58,9 +73,19 @@ func TestHub_Commits(t *testing.T) {
 	var once sync.Once   
 	var messageReceived bool = false 
 
+	go func() {
+		select {
+		case err := <-errorCh:
+			if err != nil {
+				t.Errorf("Test failed due to error: %v", err)
+			}
+		case <-doneCh:
+		}
+	}()
+
 	for _, partition := range partitions {
 		consPartition, err := consumer.ConsumePartition("test_topic", partition, sarama.OffsetNewest)
-		if err != nil {
+		if !assert.NoError(t, err) {
 			t.Fatalf("Failed to consume partition: %v", err)
 		}
 
@@ -78,7 +103,9 @@ func TestHub_Commits(t *testing.T) {
 						return
 					}
 
-					commitMsg, ok1 := msg["commit_message"].(string)
+					fmt.Println(msg)
+
+					commitMsg, ok1 := msg["message"].(string)
 					sha, ok2 := msg["sha"].(string)
 
 					if !ok1 || !ok2 {
@@ -100,6 +127,6 @@ func TestHub_Commits(t *testing.T) {
 	wg.Wait()
 
 	if !messageReceived {
-		t.Fatalf("Expected message not received in any partition")
+		t.Fatal("Expected message not received in any partition")
 	}
 }
