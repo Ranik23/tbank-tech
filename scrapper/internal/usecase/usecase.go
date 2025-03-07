@@ -2,12 +2,12 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 	"tbank/scrapper/config"
-	dbmodels "tbank/scrapper/internal/models"
 	"tbank/scrapper/internal/hub"
+	dbmodels "tbank/scrapper/internal/models"
 	"tbank/scrapper/internal/storage"
 )
-
 
 //TODO
 
@@ -15,20 +15,24 @@ type UseCase interface {
 	RegisterUser(ctx context.Context, userID uint, name string) 										error
 	DeleteUser(ctx context.Context, userID uint) 														error
 	GetLinks(ctx context.Context, userID uint) 															([]dbmodels.Link, error)
-	AddLink(ctx context.Context, link dbmodels.Link, userID int64) 										(*dbmodels.Link, error)
-	RemoveLink(ctx context.Context, linkID uint) 														error
+	AddLink(ctx context.Context, link dbmodels.Link, userID uint) 										(*dbmodels.Link, error)
+	RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) 									error
 }
 
 type UseCaseImpl struct {
+	logger 		*slog.Logger
 	hub 		*hub.Hub
 	cfg 		*config.Config
 	storage 	storage.Storage
 }
 
-func NewUseCaseImpl(cfg *config.Config, storage storage.Storage, hub *hub.Hub) (*UseCaseImpl, error) {
+func NewUseCaseImpl(cfg *config.Config, storage storage.Storage,
+					hub *hub.Hub, logger *slog.Logger) (*UseCaseImpl, error) {
 	return &UseCaseImpl{
 		cfg: cfg,
 		storage: storage,
+		hub: hub,
+		logger: logger,
 	}, nil
 }
 
@@ -44,20 +48,38 @@ func (usecase *UseCaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmode
 	return usecase.storage.GetURLS(ctx, userID)
 }
 
-func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID int64) (*dbmodels.Link, error) {
-	usecase.hub.AddTrack(link.Url)
-	usecase.storage.CreateLink(ctx, link.Url)
+func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
 
-	return nil, nil
+	usecase.hub.AddTrack(link.Url)
+
+	if err := usecase.storage.CreateLink(ctx, link.Url); err != nil {
+		return nil, err
+	}
+	
+	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := usecase.storage.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
+		return nil, err
+	}
+
+	return linkNew, nil
 }
 
-func (u *UseCaseImpl) RemoveLink(ctx context.Context, linkID uint) error {
+func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
-	var link string
+	usecase.hub.RemoveTrack(link.Url)
 
-	u.storage.
+	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
+	if err != nil {
+		return err
+	}
 
-
-	u.hub.RemoveTrack()
+	if err := usecase.storage.DeleteLink(ctx, linkNew.ID); err != nil {
+		return err
+	}
+	
 	return nil
 }

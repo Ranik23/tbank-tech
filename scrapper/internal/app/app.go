@@ -54,14 +54,16 @@ func NewApp() (*App, error) {
 	topicName := "updates"
 	hub := hub.NewHub(producer, logger, gitHubClient, topicName)
 
-	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub)
+	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	scrapperGRPCServer := grpcserver.NewScrapperServer(usecase, nil)
+	_ = grpcserver.NewScrapperServer(usecase)
+	scrapperGRPCServerMock := &gen.UnimplementedScrapperServer{}
 
-	gen.RegisterScrapperServer(grpcServer, scrapperGRPCServer)
+
+	gen.RegisterScrapperServer(grpcServer, scrapperGRPCServerMock)
 
 	return &App{
 		grpcServer: grpcServer,

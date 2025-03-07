@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Scrapper_RegisterChat_FullMethodName = "/scrapper.Scrapper/RegisterChat"
-	Scrapper_DeleteChat_FullMethodName   = "/scrapper.Scrapper/DeleteChat"
+	Scrapper_RegisterUser_FullMethodName = "/scrapper.Scrapper/RegisterUser"
+	Scrapper_DeleteUser_FullMethodName   = "/scrapper.Scrapper/DeleteUser"
 	Scrapper_GetLinks_FullMethodName     = "/scrapper.Scrapper/GetLinks"
 	Scrapper_AddLink_FullMethodName      = "/scrapper.Scrapper/AddLink"
 	Scrapper_RemoveLink_FullMethodName   = "/scrapper.Scrapper/RemoveLink"
@@ -29,9 +29,11 @@ const (
 // ScrapperClient is the client API for Scrapper service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Сервис Scrapper
 type ScrapperClient interface {
-	RegisterChat(ctx context.Context, in *RegisterChatRequest, opts ...grpc.CallOption) (*RegisterChatResponse, error)
-	DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error)
+	RegisterUser(ctx context.Context, in *RegisterUserRequest, opts ...grpc.CallOption) (*RegisterUserResponse, error)
+	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	GetLinks(ctx context.Context, in *GetLinksRequest, opts ...grpc.CallOption) (*ListLinksResponse, error)
 	AddLink(ctx context.Context, in *AddLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error)
 	RemoveLink(ctx context.Context, in *RemoveLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error)
@@ -45,20 +47,20 @@ func NewScrapperClient(cc grpc.ClientConnInterface) ScrapperClient {
 	return &scrapperClient{cc}
 }
 
-func (c *scrapperClient) RegisterChat(ctx context.Context, in *RegisterChatRequest, opts ...grpc.CallOption) (*RegisterChatResponse, error) {
+func (c *scrapperClient) RegisterUser(ctx context.Context, in *RegisterUserRequest, opts ...grpc.CallOption) (*RegisterUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RegisterChatResponse)
-	err := c.cc.Invoke(ctx, Scrapper_RegisterChat_FullMethodName, in, out, cOpts...)
+	out := new(RegisterUserResponse)
+	err := c.cc.Invoke(ctx, Scrapper_RegisterUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *scrapperClient) DeleteChat(ctx context.Context, in *DeleteChatRequest, opts ...grpc.CallOption) (*DeleteChatResponse, error) {
+func (c *scrapperClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteChatResponse)
-	err := c.cc.Invoke(ctx, Scrapper_DeleteChat_FullMethodName, in, out, cOpts...)
+	out := new(DeleteUserResponse)
+	err := c.cc.Invoke(ctx, Scrapper_DeleteUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +100,11 @@ func (c *scrapperClient) RemoveLink(ctx context.Context, in *RemoveLinkRequest, 
 // ScrapperServer is the server API for Scrapper service.
 // All implementations must embed UnimplementedScrapperServer
 // for forward compatibility.
+//
+// Сервис Scrapper
 type ScrapperServer interface {
-	RegisterChat(context.Context, *RegisterChatRequest) (*RegisterChatResponse, error)
-	DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error)
+	RegisterUser(context.Context, *RegisterUserRequest) (*RegisterUserResponse, error)
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	GetLinks(context.Context, *GetLinksRequest) (*ListLinksResponse, error)
 	AddLink(context.Context, *AddLinkRequest) (*LinkResponse, error)
 	RemoveLink(context.Context, *RemoveLinkRequest) (*LinkResponse, error)
@@ -114,11 +118,11 @@ type ScrapperServer interface {
 // pointer dereference when methods are called.
 type UnimplementedScrapperServer struct{}
 
-func (UnimplementedScrapperServer) RegisterChat(context.Context, *RegisterChatRequest) (*RegisterChatResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterChat not implemented")
+func (UnimplementedScrapperServer) RegisterUser(context.Context, *RegisterUserRequest) (*RegisterUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterUser not implemented")
 }
-func (UnimplementedScrapperServer) DeleteChat(context.Context, *DeleteChatRequest) (*DeleteChatResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteChat not implemented")
+func (UnimplementedScrapperServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 func (UnimplementedScrapperServer) GetLinks(context.Context, *GetLinksRequest) (*ListLinksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLinks not implemented")
@@ -150,38 +154,38 @@ func RegisterScrapperServer(s grpc.ServiceRegistrar, srv ScrapperServer) {
 	s.RegisterService(&Scrapper_ServiceDesc, srv)
 }
 
-func _Scrapper_RegisterChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterChatRequest)
+func _Scrapper_RegisterUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ScrapperServer).RegisterChat(ctx, in)
+		return srv.(ScrapperServer).RegisterUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Scrapper_RegisterChat_FullMethodName,
+		FullMethod: Scrapper_RegisterUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ScrapperServer).RegisterChat(ctx, req.(*RegisterChatRequest))
+		return srv.(ScrapperServer).RegisterUser(ctx, req.(*RegisterUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scrapper_DeleteChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteChatRequest)
+func _Scrapper_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ScrapperServer).DeleteChat(ctx, in)
+		return srv.(ScrapperServer).DeleteUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Scrapper_DeleteChat_FullMethodName,
+		FullMethod: Scrapper_DeleteUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ScrapperServer).DeleteChat(ctx, req.(*DeleteChatRequest))
+		return srv.(ScrapperServer).DeleteUser(ctx, req.(*DeleteUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -248,12 +252,12 @@ var Scrapper_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ScrapperServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RegisterChat",
-			Handler:    _Scrapper_RegisterChat_Handler,
+			MethodName: "RegisterUser",
+			Handler:    _Scrapper_RegisterUser_Handler,
 		},
 		{
-			MethodName: "DeleteChat",
-			Handler:    _Scrapper_DeleteChat_Handler,
+			MethodName: "DeleteUser",
+			Handler:    _Scrapper_DeleteUser_Handler,
 		},
 		{
 			MethodName: "GetLinks",

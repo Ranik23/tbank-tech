@@ -6,17 +6,17 @@ import "google/api/annotations.proto";
 
 option go_package = "scrapper/api/proto/gen;gen";
 
-
+// Сервис Scrapper
 service Scrapper {
-  rpc RegisterChat(RegisterChatRequest) returns (RegisterChatResponse) {
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {
     option (google.api.http) = {
-      post: "/tg-chat/{id}"
+      post: "/tg-chat/{tg_user_id}"
     };
   }
 
-  rpc DeleteChat(DeleteChatRequest) returns (DeleteChatResponse) {
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {
-      delete: "/tg-chat/{id}"
+      delete: "/tg-chat/{tg_user_id}"
     };
   }
 
@@ -25,7 +25,6 @@ service Scrapper {
       get: "/links"
     };
   }
-  
 
   rpc AddLink(AddLinkRequest) returns (LinkResponse) {
     option (google.api.http) = {
@@ -33,60 +32,65 @@ service Scrapper {
       body: "*"
     };
   }
-  
 
   rpc RemoveLink(RemoveLinkRequest) returns (LinkResponse) {
     option (google.api.http) = {
       delete: "/links"
     };
   }
-    
 }
 
-message RegisterChatRequest {
-  int64 id = 1;
+// Запрос для регистрации пользователя
+message RegisterUserRequest {
+  int64 tg_user_id = 1;
+  string name = 2; // Имя пользователя
 }
 
-message RegisterChatResponse {
+// Ответ на регистрацию пользователя
+message RegisterUserResponse {
   string message = 1;
 }
 
-message DeleteChatRequest {
-  int64 id = 1;
+// Запрос для удаления пользователя
+message DeleteUserRequest {
+  int64 tg_user_id = 1;
 }
 
-message DeleteChatResponse {
+// Ответ на удаление пользователя
+message DeleteUserResponse {
   string message = 1;
 }
 
+// Запрос для получения ссылок
 message GetLinksRequest {
-  int64 tg_chat_id = 1;
+  int64 tg_user_id = 1;
 }
 
+// Запрос для добавления ссылки
 message AddLinkRequest {
-  int64 tg_chat_id = 1;
-  string link = 2;
-  repeated string tags = 3;
-  repeated string filters = 4;
+  int64 tg_user_id = 1;
+  string url = 2;
 }
 
+// Запрос для удаления ссылки
 message RemoveLinkRequest {
-  int64 tg_chat_id = 1;
-  string link = 2;
+  int64 tg_user_id = 1;
+  string url = 2;
 }
 
+// Ответ на ссылку
 message LinkResponse {
   int64 id = 1;
   string url = 2;
-  repeated string tags = 3;
-  repeated string filters = 4;
 }
 
+// Ответ на получение списка ссылок
 message ListLinksResponse {
   repeated LinkResponse links = 1;
   int32 size = 2;
 }
 
+// Ответ на ошибку API
 message ApiErrorResponse {
   string description = 1;
   string code = 2;

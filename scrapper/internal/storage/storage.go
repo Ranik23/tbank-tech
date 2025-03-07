@@ -2,11 +2,19 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/models"
+
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var (
+	ErrUniqueViolation = "23505"
+)
+
 
 type Storage interface {
 	CreateLink(ctx context.Context, link string) 					error
@@ -19,7 +27,7 @@ type Storage interface {
 
 	GetURLS(ctx context.Context, userID uint) 						([]dbmodels.Link, error)
 	GetLinkByID(ctx context.Context, id uint) 						(*dbmodels.Link, error)
-	GetLinkByName(ctx context.Context, name string) 				(*dbmodels.Link, error)
+	GetLinkByURL(ctx context.Context, url string) 					(*dbmodels.Link, error)
 }
 
 type StorageImpl struct {
@@ -46,13 +54,13 @@ func NewStorageImpl(cfg *config.Config) (Storage, error) {
 	}, nil
 }
 
-func (s *StorageImpl) GetLinkByName(ctx context.Context, name string) (*dbmodels.Link, error) {
+func (s *StorageImpl) GetLinkByURL(ctx context.Context, url string) (*dbmodels.Link, error) {
 
 	var link dbmodels.Link
 
 	query := `SELECT id, name FROM links WHERE name = $1`
 
-	if err := s.pool.QueryRow(ctx, query, name).Scan(&link); err != nil {
+	if err := s.pool.QueryRow(ctx, query, url).Scan(&link); err != nil {
 		return nil, err
 	}
 	return &link, nil
@@ -129,6 +137,10 @@ func (s *StorageImpl) CreateUser(ctx context.Context, userID uint, name string) 
 	query := `INSERT INTO users (user_id, name) VALUES ($1, $2)`
 	_, err := s.pool.Exec(ctx, query, userID, name)
 	if err != nil {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) && pgError.Code == ErrUniqueViolation {
+			return nil
+		}
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 	return nil
@@ -138,19 +150,22 @@ func (s *StorageImpl) CreateLink(ctx context.Context, link string) error {
 	query := `INSERT INTO links (url) VALUES ($1)`
 	_, err := s.pool.Exec(ctx, query, link)
 	if err != nil {
+		var pgError *pgconn.PgError 
+		if errors.As(err, &pgError) && pgError.Code == ErrUniqueViolation {
+			return nil 
+		}
 		return fmt.Errorf("failed to create link: %w", err)
 	}
 	return nil
 }
 
+
 func (s *StorageImpl) GetLinkByID(ctx context.Context, id uint) (*dbmodels.Link, error) {
 	var link dbmodels.Link
-
 	query := `SELECT id, url FROM links WHERE id = $1`
 	err := s.pool.QueryRow(ctx, query, id).Scan(&link.ID, &link.Url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get link by ID: %w", err)
 	}
-
 	return &link, nil
 }

@@ -35,7 +35,7 @@
         },
         "parameters": [
           {
-            "name": "tgChatId",
+            "name": "tgUserId",
             "in": "query",
             "required": false,
             "type": "string",
@@ -64,14 +64,14 @@
         },
         "parameters": [
           {
-            "name": "tgChatId",
+            "name": "tgUserId",
             "in": "query",
             "required": false,
             "type": "string",
             "format": "int64"
           },
           {
-            "name": "link",
+            "name": "url",
             "in": "query",
             "required": false,
             "type": "string"
@@ -112,14 +112,14 @@
         ]
       }
     },
-    "/tg-chat/{id}": {
+    "/tg-chat/{tgUserId}": {
       "delete": {
-        "operationId": "Scrapper_DeleteChat",
+        "operationId": "Scrapper_DeleteUser",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/scrapperDeleteChatResponse"
+              "$ref": "#/definitions/scrapperDeleteUserResponse"
             }
           },
           "default": {
@@ -131,7 +131,7 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "tgUserId",
             "in": "path",
             "required": true,
             "type": "string",
@@ -143,12 +143,12 @@
         ]
       },
       "post": {
-        "operationId": "Scrapper_RegisterChat",
+        "operationId": "Scrapper_RegisterUser",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/scrapperRegisterChatResponse"
+              "$ref": "#/definitions/scrapperRegisterUserResponse"
             }
           },
           "default": {
@@ -160,11 +160,18 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "tgUserId",
             "in": "path",
             "required": true,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "name",
+            "description": "Имя пользователя",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -205,34 +212,24 @@
     "scrapperAddLinkRequest": {
       "type": "object",
       "properties": {
-        "tgChatId": {
+        "tgUserId": {
           "type": "string",
           "format": "int64"
         },
-        "link": {
+        "url": {
           "type": "string"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "filters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
-      }
+      },
+      "title": "Запрос для добавления ссылки"
     },
-    "scrapperDeleteChatResponse": {
+    "scrapperDeleteUserResponse": {
       "type": "object",
       "properties": {
         "message": {
           "type": "string"
         }
-      }
+      },
+      "title": "Ответ на удаление пользователя"
     },
     "scrapperLinkResponse": {
       "type": "object",
@@ -243,20 +240,9 @@
         },
         "url": {
           "type": "string"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "filters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
-      }
+      },
+      "title": "Ответ на ссылку"
     },
     "scrapperListLinksResponse": {
       "type": "object",
@@ -272,15 +258,17 @@
           "type": "integer",
           "format": "int32"
         }
-      }
+      },
+      "title": "Ответ на получение списка ссылок"
     },
-    "scrapperRegisterChatResponse": {
+    "scrapperRegisterUserResponse": {
       "type": "object",
       "properties": {
         "message": {
           "type": "string"
         }
-      }
+      },
+      "title": "Ответ на регистрацию пользователя"
     }
   }
 }
