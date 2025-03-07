@@ -82,7 +82,7 @@ func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
 	if link.Url == "" {
-		return `ErrEmptyURL
+		return ErrEmptyURL
 	}
 
 	usecase.hub.RemoveTrack(link.Url, userID)
