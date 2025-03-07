@@ -51,8 +51,7 @@ func NewApp() (*App, error) {
 
 	gitHubClient := github.NewRealGitHubClient()
 
-	topicName := "updates"
-	hub := hub.NewHub(producer, logger, gitHubClient, topicName)
+	hub := hub.NewHub(producer, logger, gitHubClient)
 
 	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub, logger)
 	if err != nil {

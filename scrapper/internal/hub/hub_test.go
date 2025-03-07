@@ -12,7 +12,7 @@ func TestHub(t *testing.T) {
 	link := "test"
 	userID := uint(1)
 
-	hub := NewHub(nil, logger, nil, "")
+	hub := NewHub(nil, logger, nil)
 
 	hub.AddTrack(link, userID)
 	if len(hub.linksUsers[link]) != 1 {
@@ -41,7 +41,7 @@ func TestHub(t *testing.T) {
 
 func TestHubConcurrency(t *testing.T) {
 	logger := slog.Default()
-	h := NewHub(nil, logger, nil, "")
+	h := NewHub(nil, logger, nil)
 	link := "http://example.com"
 
 	var wg sync.WaitGroup
@@ -76,7 +76,7 @@ func TestHubConcurrency(t *testing.T) {
 
 func TestHubMaxLinks(t *testing.T) {
 	logger := slog.Default()
-	hub := NewHub(nil, logger, nil, "")
+	hub := NewHub(nil, logger, nil)
 
 	for i := 0; i < 1000; i++ {
 		link := fmt.Sprintf("http://example%d.com", i)
@@ -104,7 +104,7 @@ func TestHubMaxLinks(t *testing.T) {
 
 func TestHubEmptyLink(t *testing.T) {
 	logger := slog.Default()
-	hub := NewHub(nil, logger, nil, "")
+	hub := NewHub(nil, logger, nil)
 
 	hub.AddTrack("", 1)
 	if _, exists := hub.linksUsers[""]; exists {
@@ -119,7 +119,7 @@ func TestHubEmptyLink(t *testing.T) {
 
 func TestHubAddAndRemoveConcurrently(t *testing.T) {
 	logger := slog.Default()
-	hub := NewHub(nil, logger, nil, "")
+	hub := NewHub(nil, logger, nil)
 	link := "http://example.com"
 
 	var wg sync.WaitGroup
@@ -149,7 +149,7 @@ func TestHubAddAndRemoveConcurrently(t *testing.T) {
 
 func TestHubRemoveNonExistentLink(t *testing.T) {
 	logger := slog.Default()
-	hub := NewHub(nil, logger, nil, "")
+	hub := NewHub(nil, logger, nil)
 	link := "http://nonexistent.com"
 
 	hub.RemoveTrack(link, 1)

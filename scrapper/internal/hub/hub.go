@@ -2,11 +2,18 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
-	"time"
-	"github.com/IBM/sarama"
 	git "tbank/scrapper/pkg/github"
+	"time"
+
+	"github.com/IBM/sarama"
+)
+
+var (
+	ErrEmptyLink = fmt.Errorf("empty link")
 )
 
 type Hub struct {
@@ -16,48 +23,56 @@ type Hub struct {
 	mut           		sync.Mutex
 	logger        		*slog.Logger
 	gitClient     		git.GitHubClient
-	topicToProduceIn 	string
 }
 
-func NewHub(producer sarama.AsyncProducer, logger *slog.Logger, gitClient git.GitHubClient, topic string) *Hub {
+func NewHub(producer sarama.AsyncProducer, logger *slog.Logger, gitClient git.GitHubClient) *Hub {
 	return &Hub{
 		linksCancel:   make(map[string]context.CancelFunc),
 		linksUsers:    make(map[string][]uint),
 		kafkaProducer: producer,
 		logger:        logger,
 		gitClient:     gitClient,
-		topicToProduceIn: topic,
 	}
 }
 
-func (h *Hub) AddTrack(link string, userID uint) {
+func (h *Hub) AddTrack(linkToTrack string, userID uint) error {
 	h.mut.Lock()
 	defer h.mut.Unlock()
 
-	if link == "" {
-		return
+	if linkToTrack == "" {
+		return ErrEmptyLink
 	}
 
-	if _, exists := h.linksUsers[link]; !exists {
+	if _, exists := h.linksUsers[linkToTrack]; !exists {
 
 		ctx, cancel := context.WithCancel(context.Background())
-		client := NewClient(h.kafkaProducer, h.logger, h.topicToProduceIn, h.gitClient)
 
-		go client.Run(ctx, link, 10 * time.Second)
+		client := NewClient(h.kafkaProducer, h.logger, linkToTrack, h.gitClient)
 
-		h.linksCancel[link] = cancel
+		go client.Run(ctx, 10 * time.Second)
+
+		h.linksCancel[linkToTrack] = cancel
 	}
 
-	h.linksUsers[link] = append(h.linksUsers[link], userID)
+	if !slices.Contains(h.linksUsers[linkToTrack], userID) {
+		h.linksUsers[linkToTrack] = append(h.linksUsers[linkToTrack], userID)
+	}
+	
+	return nil
 }
 
-func (h *Hub) RemoveTrack(link string, userID uint) {
+func (h *Hub) RemoveTrack(linkToUnTrack string, userID uint) error {
 	h.mut.Lock()
 	defer h.mut.Unlock()
 
-	if users, exists := h.linksUsers[link]; exists {
-		// Удаляем userID из списка
+	if linkToUnTrack == "" {
+		return ErrEmptyLink
+	}
+
+	if users, exists := h.linksUsers[linkToUnTrack]; exists {
+
 		filteredUsers := []uint{}
+
 		for _, id := range users {
 			if id != userID {
 				filteredUsers = append(filteredUsers, id)
@@ -65,14 +80,14 @@ func (h *Hub) RemoveTrack(link string, userID uint) {
 		}
 
 		if len(filteredUsers) == 0 {
-			// Если больше нет пользователей, отменяем контекст и удаляем запись
-			if cancelFunc, ok := h.linksCancel[link]; ok {
+			if cancelFunc, ok := h.linksCancel[linkToUnTrack]; ok {
 				cancelFunc()
-				delete(h.linksCancel, link)
+				delete(h.linksCancel, linkToUnTrack)
 			}
-			delete(h.linksUsers, link)
+			delete(h.linksUsers, linkToUnTrack)
 		} else {
-			h.linksUsers[link] = filteredUsers
+			h.linksUsers[linkToUnTrack] = filteredUsers
 		}
 	}
+	return nil
 }
