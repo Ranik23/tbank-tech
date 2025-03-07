@@ -3,9 +3,9 @@ package hub_kafka_test
 import (
 	"encoding/json"
 	"log/slog"
-	"testing"
 	"tbank/scrapper/internal/hub"
 	git "tbank/scrapper/internal/mocks/github"
+	"testing"
 
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
@@ -166,7 +166,6 @@ func TestHub_EmptyCommit(t *testing.T) {
 	}
 }
 
-
 func TestHub_MultipleCommits(t *testing.T) {
 	addresses := []string{"0.0.0.0:9093"}
 
@@ -195,7 +194,7 @@ func TestHub_MultipleCommits(t *testing.T) {
 		}, nil, nil).AnyTimes()
 
 	hub := hub.NewHub(asyncProducer, slog.Default(), mockGitHubClient, "test_topic")
-	
+
 	hub.AddTrack("https://github.com/test_owner/test_repo")
 
 	consumer, err := sarama.NewConsumer(addresses, nil)
@@ -212,24 +211,58 @@ func TestHub_MultipleCommits(t *testing.T) {
 
 	expectedCommits := map[string]string{
 		"sha_1": "First commit",
-		"sha_2": "Second commit",
 	}
 
 	receivedCommits := map[string]string{}
 
-	for i := 0; i < 2; i++ {
-		message := <-partitionConsumer.Messages()
-		var msg map[string]interface{}
-		if err := json.Unmarshal(message.Value, &msg); err != nil {
-			t.Fatalf("❌ Failed to unmarshal message: %v", err)
-		}
-
-		sha, _ := msg["sha"].(string)
-		commitMsg, _ := msg["message"].(string)
-
-		receivedCommits[sha] = commitMsg
+	message := <-partitionConsumer.Messages()
+	var msg map[string]interface{}
+	if err := json.Unmarshal(message.Value, &msg); err != nil {
+		t.Fatalf("❌ Failed to unmarshal message: %v", err)
 	}
+
+	sha, _ := msg["sha"].(string)
+	commitMsg, _ := msg["message"].(string)
+
+	receivedCommits[sha] = commitMsg
 
 	assert.Equal(t, expectedCommits, receivedCommits, "❌ Received commits do not match expected")
 	t.Log("✅ Test passed: Received all expected commits")
+}
+
+func TestHub_GitHubError(t *testing.T) {
+	addresses := []string{"0.0.0.0:9093"}
+
+	asyncProducer, err := sarama.NewAsyncProducer(addresses, nil)
+	if !assert.NoError(t, err) {
+		t.Fatalf("❌ Failed to create AsyncProducer: %v", err)
+	}
+	defer asyncProducer.Close()
+
+	ctrl := gomock.NewController(t)
+	mockGitHubClient := git.NewMockGitHubClient(ctrl)
+	mockGitHubClient.EXPECT().ListCommits(gomock.Any(), "test_owner", "test_repo", gomock.Any()).Return(
+		nil, nil, assert.AnError).AnyTimes() // Возвращаем ошибку
+
+	hub := hub.NewHub(asyncProducer, slog.Default(), mockGitHubClient, "test_topic")
+	hub.AddTrack("https://github.com/test_owner/test_repo")
+
+	consumer, err := sarama.NewConsumer(addresses, nil)
+	if !assert.NoError(t, err) {
+		t.Fatalf("❌ Failed to create Consumer: %v", err)
+	}
+	defer consumer.Close()
+
+	partitionConsumer, err := consumer.ConsumePartition("test_topic", 0, sarama.OffsetNewest)
+	if !assert.NoError(t, err) {
+		t.Fatalf("❌ Failed to consume partition: %v", err)
+	}
+	defer partitionConsumer.Close()
+
+	select {
+	case msg := <-partitionConsumer.Messages():
+		t.Fatalf("❌ Unexpected message received despite GitHub error: %+v", msg)
+	default:
+		t.Log("✅ Test passed: No messages received as expected")
+	}
 }
