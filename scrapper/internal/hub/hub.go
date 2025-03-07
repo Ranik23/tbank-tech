@@ -11,7 +11,7 @@ import (
 
 type Hub struct {
 	linksCancel   		map[string]context.CancelFunc
-	linksCount    		map[string]int
+	linksUsers    		map[string][]uint
 	kafkaProducer 		sarama.AsyncProducer
 	mut           		sync.Mutex
 	logger        		*slog.Logger
@@ -22,7 +22,7 @@ type Hub struct {
 func NewHub(producer sarama.AsyncProducer, logger *slog.Logger, gitClient git.GitHubClient, topic string) *Hub {
 	return &Hub{
 		linksCancel:   make(map[string]context.CancelFunc),
-		linksCount:    make(map[string]int),
+		linksUsers:    make(map[string][]uint),
 		kafkaProducer: producer,
 		logger:        logger,
 		gitClient:     gitClient,
@@ -30,7 +30,7 @@ func NewHub(producer sarama.AsyncProducer, logger *slog.Logger, gitClient git.Gi
 	}
 }
 
-func (h *Hub) AddTrack(link string) {
+func (h *Hub) AddTrack(link string, userID uint) {
 	h.mut.Lock()
 	defer h.mut.Unlock()
 
@@ -38,8 +38,7 @@ func (h *Hub) AddTrack(link string) {
 		return
 	}
 
-	if count, exists := h.linksCount[link]; !exists {
-		h.linksCount[link] = 1
+	if _, exists := h.linksUsers[link]; !exists {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		client := NewClient(h.kafkaProducer, h.logger, h.topicToProduceIn, h.gitClient)
@@ -47,24 +46,33 @@ func (h *Hub) AddTrack(link string) {
 		go client.Run(ctx, link, 10*time.Second)
 
 		h.linksCancel[link] = cancel
-	} else {
-		h.linksCount[link] = count + 1
 	}
+
+	h.linksUsers[link] = append(h.linksUsers[link], userID)
 }
 
-func (h *Hub) RemoveTrack(link string) {
+func (h *Hub) RemoveTrack(link string, userID uint) {
 	h.mut.Lock()
 	defer h.mut.Unlock()
 
-	if count, exists := h.linksCount[link]; exists {
-		if count > 1 {
-			h.linksCount[link] = count - 1
-		} else {
+	if users, exists := h.linksUsers[link]; exists {
+		// Удаляем userID из списка
+		filteredUsers := []uint{}
+		for _, id := range users {
+			if id != userID {
+				filteredUsers = append(filteredUsers, id)
+			}
+		}
+
+		if len(filteredUsers) == 0 {
+			// Если больше нет пользователей, отменяем контекст и удаляем запись
 			if cancelFunc, ok := h.linksCancel[link]; ok {
 				cancelFunc()
 				delete(h.linksCancel, link)
 			}
-			delete(h.linksCount, link)
+			delete(h.linksUsers, link)
+		} else {
+			h.linksUsers[link] = filteredUsers
 		}
 	}
 }
