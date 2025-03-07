@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"tbank/scrapper/config"
 	"tbank/scrapper/internal/hub"
@@ -10,6 +11,12 @@ import (
 )
 
 //TODO
+
+
+var (
+	ErrEmptyURL = fmt.Errorf("empty url")
+)
+
 
 type UseCase interface {
 	RegisterUser(ctx context.Context, userID uint, name string) 										error
@@ -50,7 +57,11 @@ func (usecase *UseCaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmode
 
 func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
 
-	usecase.hub.AddTrack(link.Url)
+	if link.Url == "" {
+		return nil, ErrEmptyURL
+	}
+
+	usecase.hub.AddTrack(link.Url, userID)
 
 	if err := usecase.storage.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
@@ -70,7 +81,11 @@ func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 
 func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
-	usecase.hub.RemoveTrack(link.Url)
+	if link.Url == "" {
+		return `ErrEmptyURL
+	}
+
+	usecase.hub.RemoveTrack(link.Url, userID)
 
 	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
 	if err != nil {
