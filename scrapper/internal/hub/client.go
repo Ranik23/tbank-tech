@@ -81,9 +81,11 @@ func (c *Client) publishCommit(commit *github.RepositoryCommit) {
 	data := struct {
 		SHA     string `json:"sha"`
 		Message string `json:"message"`
+		URL		string `json:"url"`
 	}{
 		SHA:     commit.GetSHA(),
 		Message: commit.Commit.GetMessage(),
+		URL : 	 commit.GetURL(),
 	}
 
 	messageValue, err := json.Marshal(data)

@@ -43,7 +43,7 @@ func (h *Hub) AddTrack(link string, userID uint) {
 		ctx, cancel := context.WithCancel(context.Background())
 		client := NewClient(h.kafkaProducer, h.logger, h.topicToProduceIn, h.gitClient)
 
-		go client.Run(ctx, link, 10*time.Second)
+		go client.Run(ctx, link, 10 * time.Second)
 
 		h.linksCancel[link] = cancel
 	}
