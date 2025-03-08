@@ -8,7 +8,6 @@ import (
 	"time"
 
 	git "tbank/scrapper/pkg/github"
-	"tbank/scrapper/pkg/github/utils"
 	githubUtils "tbank/scrapper/pkg/github/utils"
 
 	"github.com/IBM/sarama"
@@ -98,12 +97,12 @@ func (c *Client) publishCommit(commit *github.RepositoryCommit) error {
 		return err
 	}
 
-	owner, repo, err := utils.GetLinkParams(c.linkToTrack)
+	owner, repo, err := githubUtils.GetLinkParams(c.linkToTrack)
 	if err != nil {
 		return err
 	}
 
-	topicName := fmt.Sprintf("%s/%s", owner, repo)
+	topicName := fmt.Sprintf("%s_%s", owner, repo)
 
 	msg := &sarama.ProducerMessage{
 		Topic: topicName,
