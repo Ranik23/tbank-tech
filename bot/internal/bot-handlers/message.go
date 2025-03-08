@@ -67,7 +67,7 @@ func MessageHandler(usecase botusecase.UseCase, users *sync.Map) telebot.Handler
                 return c.Send(fmt.Sprintf("Ошибка %v", err))
             }
 
-            response, err := usecase.RegisterChat(context.Background(), userID, hashedToken)
+            response, err := usecase.RegisterUser(context.Background(), userID, hashedToken)
             if err != nil {
                 return c.Send(fmt.Sprintf("Ошибка %v", err))
             }

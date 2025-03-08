@@ -11,8 +11,8 @@ import (
 )
 
 type UseCase interface {
-	RegisterChat(ctx context.Context, id int64, hashedToken []byte) 							(*gen.RegisterChatResponse, error)
-	DeleteChat(ctx context.Context, id int64) 													(*gen.DeleteChatResponse, error) 
+	RegisterUser(ctx context.Context, id int64, hashedToken []byte) 							(*gen.RegisterUserResponse, error)
+	DeleteUser(ctx context.Context, id int64) 													(*gen.DeleteUserResponse, error) 
 	Help(ctx context.Context)																	error 
 	AddLink(ctx context.Context, chatID int64, link string, tags []string, filters []string) 	(*gen.LinkResponse, error)
 	RemoveLink(ctx context.Context, chatID int64, link string) 									(*gen.LinkResponse, error)
@@ -49,11 +49,10 @@ func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog
 	}, nil
 }
 
-// TODO: добавить токен в реализацию
-func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64, hashedToken []byte) (*gen.RegisterChatResponse, error) {
+func (uc *UseCaseImpl) RegisterUser(ctx context.Context, chatID int64, hashedToken []byte) (*gen.RegisterUserResponse, error) {
 	uc.logger.Info("Registering chat", slog.Int64("chatID", chatID))
 
-	resp, err := uc.client.RegisterChat(ctx, &gen.RegisterChatRequest{Id: chatID})
+	resp, err := uc.client.RegisterUser(ctx, &gen.RegisterUserRequest{TgUserId: chatID})
 	if err != nil {
 		uc.logger.Error("failed to register chat", slog.Int64("chatID", chatID), slog.String("error", err.Error()))
 		return nil, err
@@ -63,10 +62,10 @@ func (uc *UseCaseImpl) RegisterChat(ctx context.Context, chatID int64, hashedTok
 	return resp, nil
 }
 
-func (uc *UseCaseImpl) DeleteChat(ctx context.Context, chatID int64) (*gen.DeleteChatResponse, error) {
+func (uc *UseCaseImpl) DeleteUser(ctx context.Context, chatID int64) (*gen.DeleteUserResponse, error) {
 	uc.logger.Info("Deleting chat", slog.Int64("chatID", chatID))
 
-	resp, err := uc.client.DeleteChat(ctx, &gen.DeleteChatRequest{Id: chatID})
+	resp, err := uc.client.DeleteUser(ctx, &gen.DeleteUserRequest{TgUserId: chatID})
 	if err != nil {
 		uc.logger.Error("failed to delete chat", slog.Int64("chatID", chatID), slog.String("error", err.Error()))
 		return nil, err
@@ -85,10 +84,8 @@ func (uc *UseCaseImpl) AddLink(ctx context.Context, chatID int64, link string, t
 	uc.logger.Info("Adding link", slog.Int64("chatID", chatID), slog.String("link", link))
 
 	resp, err := uc.client.AddLink(ctx, &gen.AddLinkRequest{
-		TgChatId: chatID,
-		Link:     link,
-		Tags:     tags,
-		Filters:  filters,
+		TgUserId: chatID,
+		Url:     link,
 	})
 	if err != nil {
 		uc.logger.Error("failed to add link", slog.Int64("chatID", chatID), slog.String("link", link), slog.String("error", err.Error()))
@@ -103,8 +100,8 @@ func (uc *UseCaseImpl) RemoveLink(ctx context.Context, chatID int64, link string
 	uc.logger.Info("Removing link", slog.Int64("chatID", chatID), slog.String("link", link))
 
 	resp, err := uc.client.RemoveLink(ctx, &gen.RemoveLinkRequest{
-		TgChatId: chatID,
-		Link:     link,
+		TgUserId: chatID,
+		Url:     link,
 	})
 	if err != nil {
 		uc.logger.Error("failed to remove link", slog.Int64("chatID", chatID), slog.String("link", link), slog.String("error", err.Error()))
@@ -119,7 +116,7 @@ func (uc *UseCaseImpl) ListLinks(ctx context.Context, chatID int64) (*gen.ListLi
 	uc.logger.Info("Listing links", slog.Int64("chatID", chatID))
 
 	resp, err := uc.client.GetLinks(ctx, &gen.GetLinksRequest{
-		TgChatId: chatID,
+		TgUserId: chatID,
 	})
 	if err != nil {
 		uc.logger.Error("failed to list links", slog.Int64("chatID", chatID), slog.String("error", err.Error()))
