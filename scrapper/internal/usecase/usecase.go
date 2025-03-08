@@ -14,7 +14,7 @@ import (
 
 
 var (
-	ErrEmptyURL = fmt.Errorf("empty url")
+	ErrEmptyLink = fmt.Errorf("empty link")
 )
 
 
@@ -34,7 +34,7 @@ type UseCaseImpl struct {
 }
 
 func NewUseCaseImpl(cfg *config.Config, storage storage.Storage,
-					hub *hub.Hub, logger *slog.Logger) (*UseCaseImpl, error) {
+					hub *hub.Hub, logger *slog.Logger) (UseCase, error) {
 	return &UseCaseImpl{
 		cfg: cfg,
 		storage: storage,
@@ -58,10 +58,12 @@ func (usecase *UseCaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmode
 func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
 
 	if link.Url == "" {
-		return nil, ErrEmptyURL
+		return nil, ErrEmptyLink
 	}
 
-	usecase.hub.AddTrack(link.Url, userID)
+	if err := usecase.hub.AddTrack(link.Url, userID); err != nil {
+		return nil, err
+	}
 
 	if err := usecase.storage.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
@@ -82,10 +84,12 @@ func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
 	if link.Url == "" {
-		return ErrEmptyURL
+		return ErrEmptyLink
 	}
 
-	usecase.hub.RemoveTrack(link.Url, userID)
+	if err := usecase.hub.RemoveTrack(link.Url, userID); err != nil {
+		return err
+	}
 
 	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
 	if err != nil {
