@@ -39,10 +39,6 @@ func (h *Hub) AddTrack(linkToTrack string, userID uint) error {
 	h.mut.Lock()
 	defer h.mut.Unlock()
 
-	if linkToTrack == "" {
-		return ErrEmptyLink
-	}
-
 	if _, exists := h.linksUsers[linkToTrack]; !exists {
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -64,10 +60,6 @@ func (h *Hub) AddTrack(linkToTrack string, userID uint) error {
 func (h *Hub) RemoveTrack(linkToUnTrack string, userID uint) error {
 	h.mut.Lock()
 	defer h.mut.Unlock()
-
-	if linkToUnTrack == "" {
-		return ErrEmptyLink
-	}
 
 	if users, exists := h.linksUsers[linkToUnTrack]; exists {
 
