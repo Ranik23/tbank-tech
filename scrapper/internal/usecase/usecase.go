@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"tbank/scrapper/config"
-	"tbank/scrapper/internal/hub"
 	dbmodels "tbank/scrapper/internal/models"
+	"tbank/scrapper/internal/hub"
 	"tbank/scrapper/internal/storage"
 )
-
-//TODO
 
 
 var (
@@ -61,9 +59,7 @@ func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 		return nil, ErrEmptyLink
 	}
 
-	if err := usecase.hub.AddTrack(link.Url, userID); err != nil {
-		return nil, err
-	}
+	usecase.hub.AddLink(link.Url, userID);
 
 	if err := usecase.storage.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
@@ -87,9 +83,7 @@ func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, u
 		return ErrEmptyLink
 	}
 
-	if err := usecase.hub.RemoveTrack(link.Url, userID); err != nil {
-		return err
-	}
+	usecase.hub.RemoveLink(link.Url, userID)
 
 	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
 	if err != nil {

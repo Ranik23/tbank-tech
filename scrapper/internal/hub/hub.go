@@ -2,84 +2,114 @@ package hub
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"slices"
-	"sync"
+	"strconv"
 	git "tbank/scrapper/pkg/github"
+	"tbank/scrapper/pkg/github/utils"
+	"tbank/scrapper/pkg/syncmap"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/google/go-github/v69/github"
 )
 
-var (
-	ErrEmptyLink = fmt.Errorf("empty link")
-)
+type Pair [2]string
 
 type Hub struct {
-	linksCancel   		map[string]context.CancelFunc
-	linksUsers    		map[string][]uint
-	kafkaProducer 		sarama.AsyncProducer
-	mut           		sync.Mutex
-	logger        		*slog.Logger
-	gitClient     		git.GitHubClient
-}
+	gitClient       git.GitHubClient
 
-func NewHub(producer sarama.AsyncProducer, logger *slog.Logger, gitClient git.GitHubClient) *Hub {
-	return &Hub{
-		linksCancel:   make(map[string]context.CancelFunc),
-		linksUsers:    make(map[string][]uint),
-		kafkaProducer: producer,
-		logger:        logger,
-		gitClient:     gitClient,
-	}
-}
+	pairCancelFunc  *syncmap.SyncMap[Pair, context.CancelFunc] 
+	latestCommitSHA *syncmap.SyncMap[string, string]
 
-func (h *Hub) AddTrack(linkToTrack string, userID uint) error {
-	h.mut.Lock()
-	defer h.mut.Unlock()
 
-	if _, exists := h.linksUsers[linkToTrack]; !exists {
+	commitChan      chan *github.RepositoryCommit
+	stopCh          chan struct{}
 
-		ctx, cancel := context.WithCancel(context.Background())
-
-		client := NewClient(h.kafkaProducer, h.logger, linkToTrack, h.gitClient)
-
-		go client.Run(ctx, 10 * time.Second)
-
-		h.linksCancel[linkToTrack] = cancel
-	}
-
-	if !slices.Contains(h.linksUsers[linkToTrack], userID) {
-		h.linksUsers[linkToTrack] = append(h.linksUsers[linkToTrack], userID)
-	}
 	
-	return nil
+	logger          *slog.Logger
 }
 
-func (h *Hub) RemoveTrack(linkToUnTrack string, userID uint) error {
-	h.mut.Lock()
-	defer h.mut.Unlock()
-
-	if users, exists := h.linksUsers[linkToUnTrack]; exists {
-
-		filteredUsers := []uint{}
-
-		for _, id := range users {
-			if id != userID {
-				filteredUsers = append(filteredUsers, id)
-			}
-		}
-
-		if len(filteredUsers) == 0 {
-			if cancelFunc, ok := h.linksCancel[linkToUnTrack]; ok {
-				cancelFunc()
-				delete(h.linksCancel, linkToUnTrack)
-			}
-			delete(h.linksUsers, linkToUnTrack)
-		} else {
-			h.linksUsers[linkToUnTrack] = filteredUsers
-		}
+func NewHub(gitClient git.GitHubClient, commitChan chan *github.RepositoryCommit, logger *slog.Logger) *Hub {
+	return &Hub{
+		gitClient:       gitClient,
+		commitChan:      commitChan,
+		logger:          logger,
+		latestCommitSHA: syncmap.NewSyncMap[string, string](),           
+		pairCancelFunc:  syncmap.NewSyncMap[Pair, context.CancelFunc](), 
+		stopCh:          make(chan struct{}),
 	}
-	return nil
+}
+
+func (h *Hub) Stop() {
+	h.logger.Info("Hub is stopped")
+	defer close(h.commitChan)
+	h.stopCh <- struct{}{}
+}
+
+func (h *Hub) AddLink(link string, userID uint) {
+
+	pair := Pair{link, strconv.Itoa(int(userID))}
+
+	owner, repo, err := utils.GetLinkParams(link)
+	if err != nil {
+		h.logger.Error("Wrong URL scheme", slog.String("err", err.Error()))
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	h.pairCancelFunc.Store(pair, cancel)
+
+	go func() {
+
+		ticker := time.NewTicker(4 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				h.logger.Info("Context cancelled", slog.String("link", link), slog.Int("userID", int(userID)))
+				return
+			case <-ticker.C:
+				timeoutCtx, cancelTimeOut := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancelTimeOut()
+
+				commit, _, err := h.gitClient.LatestCommit(timeoutCtx, owner, repo, nil)
+				if err != nil {
+					h.logger.Error("Failed to fetch the latest commit", slog.String("err", err.Error()))
+					continue
+				}
+
+				val, ok := h.latestCommitSHA.Load(link)
+
+				if !ok { 
+					h.latestCommitSHA.Store(link, commit.GetSHA())
+
+					h.commitChan <- commit
+				} else {
+					if commit.GetSHA() != val {
+						h.latestCommitSHA.Store(link, commit.GetSHA())
+
+						h.commitChan <- commit
+					}
+				}
+			case <-h.stopCh:
+				cancel()
+				h.logger.Info("Goroutine %s %d exited", link, int(userID))
+				return
+			}
+		}
+	}()
+}
+
+func (h *Hub) RemoveLink(link string, userID uint) {
+
+	pair := Pair{link, strconv.Itoa(int(userID))}
+	cancelFuncForPair, ok := h.pairCancelFunc.Load(pair)
+
+	if !ok {
+		return
+	} else {
+		cancelFuncForPair()
+		h.pairCancelFunc.Delete(pair)
+	}
+
 }

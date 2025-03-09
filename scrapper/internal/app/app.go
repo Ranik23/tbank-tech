@@ -13,12 +13,12 @@ import (
 	"tbank/scrapper/internal/gateway"
 	grpcserver "tbank/scrapper/internal/grpc-server"
 	"tbank/scrapper/internal/hub"
-	"tbank/scrapper/pkg/github"
+	git "tbank/scrapper/pkg/github"
 
-	// "tbank/scrapper/internal/storage"
 	"tbank/scrapper/internal/usecase"
 
-	"github.com/IBM/sarama"
+	// "github.com/IBM/sarama"
+	"github.com/google/go-github/v69/github"
 	"google.golang.org/grpc"
 )
 
@@ -44,25 +44,26 @@ func NewApp() (*App, error) {
 	// 	return nil, err
 	// }
 
-	producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, nil)
-	if err != nil {
-		return nil, err
-	}
+	// producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	gitHubClient := github.NewRealGitHubClient()
+	gitHubClient := git.NewRealGitHubClient()
 
-	hub := hub.NewHub(producer, logger, gitHubClient)
+	commitCh := make(chan *github.RepositoryCommit)
+
+	hub := hub.NewHub(gitHubClient, commitCh, slog.Default())
 
 	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = grpcserver.NewScrapperServer(usecase)
-	scrapperGRPCServerMock := &gen.UnimplementedScrapperServer{}
+	grpcScrapperServer := grpcserver.NewScrapperServer(usecase)
+	
 
-
-	gen.RegisterScrapperServer(grpcServer, scrapperGRPCServerMock)
+	gen.RegisterScrapperServer(grpcServer, grpcScrapperServer)
 
 	return &App{
 		grpcServer: grpcServer,
