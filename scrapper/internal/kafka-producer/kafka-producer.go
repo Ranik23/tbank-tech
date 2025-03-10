@@ -8,32 +8,36 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
-
-
-
-
 type KafkaProducer struct {
 	logger			*slog.Logger
 	sarama.AsyncProducer
 	commitCh 		chan *github.RepositoryCommit
-	stopCH 			chan struct{}
+	stopCh			chan struct{}
 }
 
 func (kp *KafkaProducer) Run() {
 	go func() {
 		for {
 			select {
-			case _, ok := <-kp.commitCh:
+			case commit, ok := <-kp.commitCh:
 				if !ok {
 					// Канал commitCh закрыт, завершаем работу
 					return
 				}
+				topic := "test"
+				kp.produceCommit(commit, topic)
 				//
-			case <- kp.stopCH:
+			case <- kp.stopCh:
 				return
 			}
 		}
 	}()
+}
+
+
+func (kp *KafkaProducer) Stop() {
+	kp.logger.Info("Kafka Producer stopped")
+	kp.stopCh <- struct{}{}
 }
 
 
