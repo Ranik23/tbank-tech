@@ -16,7 +16,7 @@ import (
 
 func TestHub_AddLink_SendsCommit(t *testing.T) {
 
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -41,8 +41,8 @@ func TestHub_AddLink_SendsCommit(t *testing.T) {
 
 	select {
 	case commit := <-commitChan:
-		assert.Equal(t, "test_sha", *commit.SHA)
-		assert.Equal(t, "Test commit message", *commit.Commit.Message)
+		assert.Equal(t, "test_sha", *commit.Commit.SHA)
+		assert.Equal(t, "Test commit message", *commit.Commit.Commit.Message)
 	case <-time.After(5 * time.Second):
 		t.Fatalf("Expected commit, but got none")
 	}
@@ -51,7 +51,7 @@ func TestHub_AddLink_SendsCommit(t *testing.T) {
 
 func TestHub_AddLinks_SendsCommits(t *testing.T) {
 
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 
 	ctrl := gomock.NewController(t)
 
@@ -91,7 +91,7 @@ func TestHub_AddLinks_SendsCommits(t *testing.T) {
 	for {
 		select {
 		case repoCommit := <-commitChan:
-			t.Logf("SHA - %s, Message - %s", *repoCommit.SHA, *repoCommit.Commit.Message)
+			t.Logf("SHA - %s, Message - %s", *repoCommit.Commit.SHA, *repoCommit.Commit.Commit.Message)
 			count++
 			if count == expectedCount {
 				return
@@ -110,7 +110,7 @@ func TestHub_Stop(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
@@ -144,7 +144,7 @@ func TestHub_AddLink_ErrorFetchingCommit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
@@ -172,7 +172,7 @@ func TestHub_AddLink_DuplicateLink(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
@@ -200,7 +200,7 @@ func TestHub_AddLink_DuplicateLink(t *testing.T) {
 
 	select {
 	case commit := <-commitChan:
-		assert.Equal(t, "test_sha", *commit.SHA)
+		assert.Equal(t, "test_sha", *commit.Commit.SHA)
 	case <-time.After(5 * time.Second):
 		t.Fatalf("Expected commit, but got none")
 	}
@@ -219,7 +219,7 @@ func TestHub_RemoveLink_CancelsGoroutine(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
@@ -251,7 +251,7 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
@@ -282,16 +282,16 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 
 	select {
 	case commit := <-commitChan:
-		assert.Equal(t, "test_sha1", *commit.SHA)
-		assert.Equal(t, "Test commit message1", *commit.Commit.Message)
+		assert.Equal(t, "test_sha1", *commit.Commit.SHA)
+		assert.Equal(t, "Test commit message1", *commit.Commit.Commit.Message)
 	case <-time.After(5 * time.Second):
 		t.Fatalf("Expected first commit, but got none")
 	}
 
 	select {
 	case commit := <-commitChan:
-		assert.Equal(t, "test_sha2", *commit.SHA)
-		assert.Equal(t, "Test commit message2", *commit.Commit.Message)
+		assert.Equal(t, "test_sha2", *commit.Commit.SHA)
+		assert.Equal(t, "Test commit message2", *commit.Commit.Commit.Message)
 	case <-time.After(5 * time.Second):
 		t.Fatalf("Expected second commit, but got none")
 	}
@@ -302,7 +302,7 @@ func TestHub_SyncMap_Operations(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan *github.RepositoryCommit)
+	commitChan := make(chan CustomCommit)
 	logger := slog.Default()
 
 	hub := NewHub(mockClient, commitChan, logger)
