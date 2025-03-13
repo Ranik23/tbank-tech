@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"context"
@@ -15,8 +15,10 @@ var (
 	ErrUniqueViolation = "23505"
 )
 
+type Repository interface {
 
-type Storage interface {
+	TxManager
+
 	CreateLink(ctx context.Context, link string) 					error
 	CreateUser(ctx context.Context, userID uint, name string) 		error
 	CreateLinkUser(ctx context.Context, linkID uint, userID uint) 	error
@@ -30,12 +32,15 @@ type Storage interface {
 	GetLinkByURL(ctx context.Context, url string) 					(*dbmodels.Link, error)
 }
 
-type storageImpl struct {
+type postgresRepository struct {
+
+	TxManager
+
 	pool *pgxpool.Pool
 	cfg  *config.Config
 }
 
-func NewstorageImpl(cfg *config.Config) (Storage, error) {
+func NewpostgresRepository(cfg *config.Config) (Repository, error) {
 	
 	databaseURL := fmt.Sprintf("%s:%s", cfg.DataBase.Host, cfg.DataBase.Port)
 	
@@ -48,14 +53,16 @@ func NewstorageImpl(cfg *config.Config) (Storage, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &storageImpl{
+	txManager := NewTransactionManager(pool)
+
+	return &postgresRepository{
 		pool: pool,
 		cfg:  cfg,
+		TxManager: txManager,
 	}, nil
 }
 
-func (s *storageImpl) GetLinkByURL(ctx context.Context, url string) (*dbmodels.Link, error) {
-
+func (s *postgresRepository) GetLinkByURL(ctx context.Context, url string) (*dbmodels.Link, error) {
 	var link dbmodels.Link
 
 	query := `SELECT id, name FROM links WHERE name = $1`
@@ -66,7 +73,7 @@ func (s *storageImpl) GetLinkByURL(ctx context.Context, url string) (*dbmodels.L
 	return &link, nil
 }
 
-func (s *storageImpl) GetURLS(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
+func (s *postgresRepository) GetURLS(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	var links []dbmodels.Link
 
 	query := `
@@ -97,7 +104,7 @@ func (s *storageImpl) GetURLS(ctx context.Context, userID uint) ([]dbmodels.Link
 	return links, nil
 }
 
-func (s *storageImpl) DeleteUser(ctx context.Context, userID uint) error {
+func (s *postgresRepository) DeleteUser(ctx context.Context, userID uint) error {
 	query := `DELETE FROM users WHERE user_id = $1`
 	_, err := s.pool.Exec(ctx, query, userID)
 	if err != nil {
@@ -106,7 +113,7 @@ func (s *storageImpl) DeleteUser(ctx context.Context, userID uint) error {
 	return nil
 }
 
-func (s *storageImpl) DeleteLink(ctx context.Context, linkID uint) error {
+func (s *postgresRepository) DeleteLink(ctx context.Context, linkID uint) error {
 	query := `DELETE FROM links WHERE id = $1`
 	_, err := s.pool.Exec(ctx, query, linkID)
 	if err != nil {
@@ -115,7 +122,7 @@ func (s *storageImpl) DeleteLink(ctx context.Context, linkID uint) error {
 	return nil
 }
 
-func (s *storageImpl) DeleteLinkUser(ctx context.Context, linkID uint, userID uint) error {
+func (s *postgresRepository) DeleteLinkUser(ctx context.Context, linkID uint, userID uint) error {
 	query := `DELETE FROM link_users WHERE link_id = $1 AND user_id = $2`
 	_, err := s.pool.Exec(ctx, query, linkID, userID)
 	if err != nil {
@@ -124,7 +131,7 @@ func (s *storageImpl) DeleteLinkUser(ctx context.Context, linkID uint, userID ui
 	return nil
 }
 
-func (s *storageImpl) CreateLinkUser(ctx context.Context, linkID uint, userID uint) error {
+func (s *postgresRepository) CreateLinkUser(ctx context.Context, linkID uint, userID uint) error {
 	query := `INSERT INTO link_users (link_id, user_id) VALUES ($1, $2)`
 	_, err := s.pool.Exec(ctx, query, linkID, userID)
 	if err != nil {
@@ -133,7 +140,7 @@ func (s *storageImpl) CreateLinkUser(ctx context.Context, linkID uint, userID ui
 	return nil
 }
 
-func (s *storageImpl) CreateUser(ctx context.Context, userID uint, name string) error {
+func (s *postgresRepository) CreateUser(ctx context.Context, userID uint, name string) error {
 	query := `INSERT INTO users (user_id, name) VALUES ($1, $2)`
 	_, err := s.pool.Exec(ctx, query, userID, name)
 	if err != nil {
@@ -146,7 +153,7 @@ func (s *storageImpl) CreateUser(ctx context.Context, userID uint, name string) 
 	return nil
 }
 
-func (s *storageImpl) CreateLink(ctx context.Context, link string) error {
+func (s *postgresRepository) CreateLink(ctx context.Context, link string) error {
 	query := `INSERT INTO links (url) VALUES ($1)`
 	_, err := s.pool.Exec(ctx, query, link)
 	if err != nil {
@@ -160,7 +167,7 @@ func (s *storageImpl) CreateLink(ctx context.Context, link string) error {
 }
 
 
-func (s *storageImpl) GetLinkByID(ctx context.Context, id uint) (*dbmodels.Link, error) {
+func (s *postgresRepository) GetLinkByID(ctx context.Context, id uint) (*dbmodels.Link, error) {
 	var link dbmodels.Link
 	query := `SELECT id, url FROM links WHERE id = $1`
 	err := s.pool.QueryRow(ctx, query, id).Scan(&link.ID, &link.Url)
