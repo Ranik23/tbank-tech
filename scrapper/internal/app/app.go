@@ -10,22 +10,25 @@ import (
 	"syscall"
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
-	"tbank/scrapper/internal/gateway"
+	"tbank/scrapper/internal/closer"
 	grpcserver "tbank/scrapper/internal/controllers/grpc"
+	"tbank/scrapper/internal/gateway"
 	"tbank/scrapper/internal/hub"
+	kafkaproducer "tbank/scrapper/internal/kafka-producer"
 	git "tbank/scrapper/pkg/github"
-
 	"tbank/scrapper/internal/usecase"
-
-	// "github.com/IBM/sarama"
-	"github.com/google/go-github/v69/github"
+	"github.com/IBM/sarama"
 	"google.golang.org/grpc"
 )
 
+
 type App struct {
-	grpcServer *grpc.Server
-	config     *config.Config
-	logger     *slog.Logger
+	grpcServer 		*grpc.Server
+	config     		*config.Config
+	logger     		*slog.Logger
+	kafkaProducer 	*kafkaproducer.KafkaProducer
+	hub				*hub.Hub
+	closer			*closer.Closer
 }
 
 func NewApp() (*App, error) {
@@ -37,23 +40,39 @@ func NewApp() (*App, error) {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+	closer := closer.NewCloser(logger)
+
 	grpcServer := grpc.NewServer()
 
-	// storage, err := storage.NewStorageImpl(cfg)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	closer.Add(func() error {
+		grpcServer.GracefulStop()
+		return nil
+	})
 
 	gitHubClient := git.NewRealGitHubClient()
 
-	commitCh := make(chan *github.RepositoryCommit)
+	commitCh := make(chan hub.CustomCommit)
+
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Producer.Return.Successes = true
+	saramaConfig.Producer.Return.Errors = true
+	
+	kafkaProducer, err := kafkaproducer.NewKafkaProducer([]string{"localhost:9093"}, logger, commitCh, saramaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	closer.Add(func() error {
+		kafkaProducer.Stop()
+		return nil
+	})
 
 	hub := hub.NewHub(gitHubClient, commitCh, slog.Default())
+
+	closer.Add(func() error {
+		hub.Stop()
+		return nil
+	})
 
 	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub, logger)
 	if err != nil {
@@ -62,13 +81,15 @@ func NewApp() (*App, error) {
 
 	grpcScrapperServer := grpcserver.NewScrapperServer(usecase)
 	
-
 	gen.RegisterScrapperServer(grpcServer, grpcScrapperServer)
 
 	return &App{
-		grpcServer: grpcServer,
-		config:     cfg,
-		logger:     logger,
+		grpcServer: 	grpcServer,
+		config:     	cfg,
+		logger:     	logger,
+		kafkaProducer:	kafkaProducer,
+		hub: 			hub,
+		closer: 		closer,
 	}, nil
 }
 
@@ -87,6 +108,10 @@ func (a *App) Run() error {
 	errorCh := make(chan error, 1)
 
 	errorChProxy := make(chan error, 1)
+
+	a.hub.Run()
+
+	a.kafkaProducer.Run()
 
 	go func() {
 		if err := a.grpcServer.Serve(listener); err != nil {
@@ -107,15 +132,24 @@ func (a *App) Run() error {
 	select {
 	case <-quit:
 		a.logger.Info("Получен сигнал завершения, выключаем gRPC сервер...")
-		a.grpcServer.GracefulStop()
+		if err := a.closer.Close(); err != nil {
+			a.logger.Error("Ошибка при закрытии ресурсов", slog.String("error", err.Error()))
+		} else {
+			a.logger.Info("Все ресурсы корректно закрыты")
+		}
 		a.logger.Info("gRPC сервер корректно завершил работу")
 		return nil
 	case err := <-errorCh:
 		a.logger.Error("Ошибка сервера", slog.String("error", err.Error()))
+		if err := a.closer.Close(); err != nil {
+			a.logger.Error("Ошибка при закрытии ресурсов", slog.String("error", err.Error()))
+		}
 		return err
-
-	case err := <- errorChProxy:
+	case err := <-errorChProxy:
 		a.logger.Error("Ошибка прокси-сервера", slog.String("error", err.Error()))
+		if err := a.closer.Close(); err != nil {
+			a.logger.Error("Ошибка при закрытии ресурсов", slog.String("error", err.Error()))
+		}
 		return err
 	}
 }

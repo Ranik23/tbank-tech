@@ -15,8 +15,8 @@ import (
 type Pair [2]string
 
 type CustomCommit struct {
-	Commit *github.RepositoryCommit
-	UserID uint
+	Commit *github.RepositoryCommit	`json:"commit"`
+	UserID uint					`json:"user_id"`
 }
 
 type Hub struct {
@@ -29,6 +29,9 @@ type Hub struct {
 }
 
 func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *slog.Logger) *Hub {
+	const op = "Hub.NewHub"
+	logger.Info(op, slog.String("message", "Creating new Hub"))
+
 	return &Hub{
 		gitClient:       gitClient,
 		commitChan:      commitChan,
@@ -39,11 +42,29 @@ func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *sl
 	}
 }
 
+func (h *Hub) Run() {
+	const op = "Hub.Run"
+	h.logger.Info(op, slog.String("message", "Hub is running..."))
+
+	go func() { 
+		<-h.stopCh
+		h.logger.Info(op, slog.String("message", "Hub is stopping..."))
+
+		h.pairCancelFunc.Range(func(pair Pair, cancel context.CancelFunc) bool {
+			cancel()
+			return true
+		})
+
+		close(h.commitChan)
+	}()
+}
+
 func (h *Hub) AddLink(link string, userID uint) {
+	const op = "Hub.AddLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	owner, repo, err := utils.GetLinkParams(link)
 	if err != nil {
-		h.logger.Error("Wrong URL scheme", slog.String("err", err.Error()))
+		h.logger.Error(op, slog.String("message", "Wrong URL scheme"), slog.String("err", err.Error()))
 		return
 	}
 
@@ -57,7 +78,7 @@ func (h *Hub) AddLink(link string, userID uint) {
 		for {
 			select {
 			case <-ctx.Done():
-				h.logger.Info("Context cancelled", slog.String("link", link), slog.Int("userID", int(userID)))
+				h.logger.Info(op, slog.String("message", "Context cancelled"), slog.String("link", link), slog.Int("userID", int(userID)))
 				return
 			case <-ticker.C:
 				timeoutCtx, cancelTimeOut := context.WithTimeout(context.Background(), 10*time.Second)
@@ -65,7 +86,7 @@ func (h *Hub) AddLink(link string, userID uint) {
 
 				commit, _, err := h.gitClient.LatestCommit(timeoutCtx, owner, repo, nil)
 				if err != nil {
-					h.logger.Error("Failed to fetch the latest commit", slog.String("err", err.Error()))
+					h.logger.Error(op, slog.String("message", "Failed to fetch the latest commit"), slog.String("err", err.Error()))
 					continue
 				}
 
@@ -77,23 +98,25 @@ func (h *Hub) AddLink(link string, userID uint) {
 				}
 			case <-h.stopCh:
 				cancel()
-				h.logger.Info("Goroutine exited", slog.String("link", link), slog.Int("userID", int(userID)))
+				h.logger.Info(op, slog.String("message", "Goroutine exited"), slog.String("link", link), slog.Int("userID", int(userID)))
 				return
 			}
 		}
 	}()
 }
 
-
 func (h *Hub) Stop() {
-	h.logger.Info("Hub is stopped")
-	defer close(h.commitChan)
-	h.stopCh <- struct{}{}
+	const op = "Hub.Stop"
+	h.logger.Info(op, slog.String("message", "Stopping Hub..."))
+	select {
+	case h.stopCh <- struct{}{}:
+	default:
+		h.logger.Warn(op, slog.String("message", "Hub is already stopped"))
+	}
 }
 
-
 func (h *Hub) RemoveLink(link string, userID uint) {
-
+	const op = "Hub.RemoveLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	cancelFuncForPair, ok := h.pairCancelFunc.Load(pair)
 
@@ -102,6 +125,6 @@ func (h *Hub) RemoveLink(link string, userID uint) {
 	} else {
 		cancelFuncForPair()
 		h.pairCancelFunc.Delete(pair)
+		h.logger.Info(op, slog.String("message", "Removed link"), slog.String("link", link), slog.Int("userID", int(userID)))
 	}
-
 }

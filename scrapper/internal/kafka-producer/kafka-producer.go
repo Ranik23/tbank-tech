@@ -3,48 +3,75 @@ package kafkaproducer
 import (
 	"encoding/json"
 	"log/slog"
+	"strconv"
+	"tbank/scrapper/internal/hub"
 
 	"github.com/IBM/sarama"
-	"github.com/google/go-github/v69/github"
 )
 
 type KafkaProducer struct {
-	logger			*slog.Logger
-	sarama.AsyncProducer
-	commitCh 		chan *github.RepositoryCommit
-	stopCh			chan struct{}
+	logger   *slog.Logger
+	producer sarama.AsyncProducer
+	commitCh chan hub.CustomCommit
+	stopCh   chan struct{}
+}
+
+func NewKafkaProducer(addresses []string, logger *slog.Logger, commitCh chan hub.CustomCommit, config *sarama.Config) (*KafkaProducer, error) {
+	const op = "KafkaProducer.NewKafkaProducer"
+	producer, err := sarama.NewAsyncProducer([]string{"localhost:9093"}, config)
+	if err != nil {
+		logger.Error(op, slog.String("error", err.Error()))
+		return nil, err
+	}
+	logger.Info(op, slog.String("msg", "Kafka producer created successfully"))
+	return &KafkaProducer{
+		logger:   logger,
+		producer: producer,
+		commitCh: commitCh,
+		stopCh:   make(chan struct{}),
+	}, nil
 }
 
 func (kp *KafkaProducer) Run() {
+	const op = "KafkaProducer.Run"
+	kp.logger.Info(op, slog.String("msg", "Kafka producer is running"))
 	go func() {
 		for {
 			select {
 			case commit, ok := <-kp.commitCh:
 				if !ok {
-					// Канал commitCh закрыт, завершаем работу
+					kp.logger.Warn(op, slog.String("msg", "Commit channel closed, stopping producer"))
+					defer kp.Stop()
 					return
 				}
-				topic := "test"
-				kp.produceCommit(commit, topic)
-				//
-			case <- kp.stopCh:
+				topicUserID := strconv.Itoa(int(commit.UserID))
+
+				if err := kp.produceCommit(commit, topicUserID); err != nil {
+					kp.logger.Error(op, slog.String("topic", topicUserID), slog.String("error", err.Error()))
+				} else {
+					kp.logger.Info(op, slog.String("user_id", topicUserID), slog.String("msg", "Produced commit successfully"))
+				}
+
+			case <-kp.stopCh:
+				kp.logger.Warn(op, slog.String("msg", "Kafka producer stopping"))
 				return
 			}
 		}
 	}()
 }
 
-
 func (kp *KafkaProducer) Stop() {
-	kp.logger.Info("Kafka Producer stopped")
-	kp.stopCh <- struct{}{}
+	const op = "KafkaProducer.Stop"
+	kp.logger.Warn(op, slog.String("msg", "Stopping Kafka producer"))
+	kp.producer.Close()
+	close(kp.stopCh)
 }
 
-
-func (kp *KafkaProducer) produceCommit(commit *github.RepositoryCommit, topic string) error {
-	commitJSON, err := json.Marshal(*commit)
+func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit, topic string) error {
+	const op = "KafkaProducer.produceCommit"
+	commitJSON, err := json.Marshal(commit)
 	if err != nil {
-		kp.logger.Error("Failed to marshall the commit: %v", err)
+		kp.logger.Error(op, slog.String("error", err.Error()))
 		return err
 	}
 
@@ -53,15 +80,14 @@ func (kp *KafkaProducer) produceCommit(commit *github.RepositoryCommit, topic st
 		Value: sarama.ByteEncoder(commitJSON),
 	}
 
-	kp.Input() <- msg
+	kp.producer.Input() <- msg
 
 	select {
-	case err := <-kp.Errors():
-
-	case succeses := <-kp.Successes():
-		
+	case errMsg := <-kp.producer.Errors():
+		kp.logger.Error(op, slog.String("error", errMsg.Err.Error()))
+		return errMsg.Err
+	case <-kp.producer.Successes():
+		kp.logger.Info(op, slog.String("msg", "Successfully sent the message"))
+		return nil
 	}
-
-
-	return nil
 }

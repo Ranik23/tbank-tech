@@ -24,7 +24,7 @@ type UseCase interface {
 	RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) 									error
 }
 
-type UseCaseImpl struct {
+type usecaseImpl struct {
 	logger 		*slog.Logger
 	hub 		*hub.Hub
 	cfg 		*config.Config
@@ -33,7 +33,7 @@ type UseCaseImpl struct {
 
 func NewUseCaseImpl(cfg *config.Config, storage storage.Storage,
 					hub *hub.Hub, logger *slog.Logger) (UseCase, error) {
-	return &UseCaseImpl{
+	return &usecaseImpl{
 		cfg: cfg,
 		storage: storage,
 		hub: hub,
@@ -41,19 +41,19 @@ func NewUseCaseImpl(cfg *config.Config, storage storage.Storage,
 	}, nil
 }
 
-func (usecase *UseCaseImpl) RegisterUser(ctx context.Context, userID uint, name string) error {
+func (usecase *usecaseImpl) RegisterUser(ctx context.Context, userID uint, name string) error {
 	return usecase.storage.CreateUser(ctx, userID, name)
 }
 
-func (usecase *UseCaseImpl) DeleteUser(ctx context.Context, userID uint) error {
+func (usecase *usecaseImpl) DeleteUser(ctx context.Context, userID uint) error {
 	return usecase.storage.DeleteUser(ctx, userID)
 }
 
-func (usecase *UseCaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
+func (usecase *usecaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	return usecase.storage.GetURLS(ctx, userID)
 }
 
-func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
+func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
 
 	if link.Url == "" {
 		return nil, ErrEmptyLink
@@ -77,7 +77,7 @@ func (usecase *UseCaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 	return linkNew, nil
 }
 
-func (usecase*UseCaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
+func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
 	if link.Url == "" {
 		return ErrEmptyLink
