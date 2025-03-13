@@ -23,7 +23,7 @@ func NewUseCaseImp(bot *telebot.Bot) *UseCaseImpl {
 
 func (uc *UseCaseImpl) SendMessage(ctx context.Context, recipients ...*telebot.Chat) error {
 	for _, chat := range recipients {
-		uc.bot.Send(chat, "Hello") // тест
+		uc.bot.Send(chat, "Hello")
 	}
 	return nil
 }

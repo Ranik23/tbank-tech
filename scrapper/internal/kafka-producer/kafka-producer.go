@@ -16,14 +16,7 @@ type KafkaProducer struct {
 	stopCh   chan struct{}
 }
 
-func NewKafkaProducer(addresses []string, logger *slog.Logger, commitCh chan hub.CustomCommit, config *sarama.Config) (*KafkaProducer, error) {
-	const op = "KafkaProducer.NewKafkaProducer"
-	producer, err := sarama.NewAsyncProducer([]string{"localhost:9093"}, config)
-	if err != nil {
-		logger.Error(op, slog.String("error", err.Error()))
-		return nil, err
-	}
-	logger.Info(op, slog.String("msg", "Kafka producer created successfully"))
+func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commitCh chan hub.CustomCommit) (*KafkaProducer, error) {
 	return &KafkaProducer{
 		logger:   logger,
 		producer: producer,
@@ -41,7 +34,6 @@ func (kp *KafkaProducer) Run() {
 			case commit, ok := <-kp.commitCh:
 				if !ok {
 					kp.logger.Warn(op, slog.String("msg", "Commit channel closed, stopping producer"))
-					defer kp.Stop()
 					return
 				}
 				topicUserID := strconv.Itoa(int(commit.UserID))
@@ -53,7 +45,7 @@ func (kp *KafkaProducer) Run() {
 				}
 
 			case <-kp.stopCh:
-				kp.logger.Warn(op, slog.String("msg", "Kafka producer stopping"))
+				kp.logger.Warn(op, slog.String("msg", "Stopping Kafka producer"))
 				return
 			}
 		}
@@ -65,6 +57,7 @@ func (kp *KafkaProducer) Stop() {
 	kp.logger.Warn(op, slog.String("msg", "Stopping Kafka producer"))
 	kp.producer.Close()
 	close(kp.stopCh)
+	close(kp.commitCh)
 }
 
 func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit, topic string) error {

@@ -15,8 +15,9 @@ import (
 	"tbank/scrapper/internal/gateway"
 	"tbank/scrapper/internal/hub"
 	kafkaproducer "tbank/scrapper/internal/kafka-producer"
-	git "tbank/scrapper/pkg/github"
 	"tbank/scrapper/internal/usecase"
+	git "tbank/scrapper/pkg/github"
+
 	"github.com/IBM/sarama"
 	"google.golang.org/grpc"
 )
@@ -56,8 +57,13 @@ func NewApp() (*App, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true
+
+	producer, err := sarama.NewAsyncProducer([]string{"localhost:9093"}, saramaConfig) 
+	if err != nil {
+		return nil, err
+	}
 	
-	kafkaProducer, err := kafkaproducer.NewKafkaProducer([]string{"localhost:9093"}, logger, commitCh, saramaConfig)
+	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh)
 	if err != nil {
 		return nil, err
 	}

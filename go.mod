@@ -47,6 +47,7 @@ require (
 
 require (
 	github.com/IBM/sarama v1.45.1
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/google/go-github/v69 v69.2.0
 	github.com/hashicorp/hcl v1.0.0 // indirect

@@ -8,14 +8,17 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"tbank/bot/api/proto/gen"
 	"tbank/bot/config"
 	handlers "tbank/bot/internal/bot-handlers"
 	"tbank/bot/internal/bot-usecase"
 	grpcserver "tbank/bot/internal/grpc-server"
+//	kafkacosumer "tbank/bot/internal/kafka-cosumer"
+	telegramproducer "tbank/bot/internal/telegram-producer"
 	"tbank/bot/internal/usecase"
-	"tbank/bot/api/proto/gen"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
@@ -44,7 +47,6 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
-
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: config.Telegram.Token,
 		Poller: &telebot.LongPoller{
@@ -59,6 +61,10 @@ func NewApp() (*App, error) {
 		return nil, err	
 	}
 
+	messagesCh := make(chan kafka.Message)
+
+	telegramProducer := telegramproducer.NewTelegramProducer(bot, messagesCh)
+
 	useCase := usecase.NewUseCaseImp(bot)
 
 	var users sync.Map
@@ -69,7 +75,6 @@ func NewApp() (*App, error) {
 	bot.Handle("/untrack", handlers.UnTrackHandler(botUseCase, &users))
 	bot.Handle("/list", handlers.ListHandler(botUseCase, &users))
 	bot.Handle(telebot.OnText, handlers.MessageHandler(botUseCase, &users))
-
 
 	grpcBotServer := grpcserver.NewBotServer(useCase, bot)
 
@@ -107,7 +112,6 @@ func (a *App) Run() error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	
-
 	select {
 	case err := <- errorCh:
 		if errors.Is(err, grpc.ErrServerStopped) {
