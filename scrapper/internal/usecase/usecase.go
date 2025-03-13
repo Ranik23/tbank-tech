@@ -6,13 +6,17 @@ import (
 	"log/slog"
 	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/models"
-	"tbank/scrapper/internal/hub"
-	"tbank/scrapper/internal/storage"
+	scheduler "tbank/scrapper/internal/hub"
+	"tbank/scrapper/internal/storage/db/postgres"
 )
 
 
 var (
 	ErrEmptyLink = fmt.Errorf("empty link")
+)
+
+const (
+	EmptyLink = ""
 )
 
 
@@ -26,71 +30,119 @@ type UseCase interface {
 
 type usecaseImpl struct {
 	logger 		*slog.Logger
-	hub 		*hub.Hub
+	scheduler	*scheduler.Hub
 	cfg 		*config.Config
-	storage 	storage.Storage
+	repo		db.Repository
 }
 
-func NewUseCaseImpl(cfg *config.Config, storage storage.Storage,
-					hub *hub.Hub, logger *slog.Logger) (UseCase, error) {
+func NewUseCaseImpl(cfg *config.Config, repository db.Repository, scheduler *scheduler.Hub, logger *slog.Logger) (UseCase, error) {
 	return &usecaseImpl{
 		cfg: cfg,
-		storage: storage,
-		hub: hub,
+		repo: repository,
+		scheduler: scheduler,
 		logger: logger,
 	}, nil
 }
 
 func (usecase *usecaseImpl) RegisterUser(ctx context.Context, userID uint, name string) error {
-	return usecase.storage.CreateUser(ctx, userID, name)
+	tx, err := usecase.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+			}
+		}
+	}()
+
+	if err := usecase.repo.CreateUser(ctx, userID, name); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (usecase *usecaseImpl) DeleteUser(ctx context.Context, userID uint) error {
-	return usecase.storage.DeleteUser(ctx, userID)
+	return usecase.repo.DeleteUser(ctx, userID)
 }
 
 func (usecase *usecaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
-	return usecase.storage.GetURLS(ctx, userID)
+	return usecase.repo.GetURLS(ctx, userID)
 }
 
 func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
-
-	if link.Url == "" {
-		return nil, ErrEmptyLink
-	}
-
-	usecase.hub.AddLink(link.Url, userID);
-
-	if err := usecase.storage.CreateLink(ctx, link.Url); err != nil {
-		return nil, err
-	}
-	
-	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
+	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := usecase.storage.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+			}
+		}
+	}()
+
+	if link.Url == EmptyLink {
+		err := ErrEmptyLink
+		return nil, err
+	}
+
+	usecase.scheduler.AddLink(link.Url, userID)
+
+	if err := usecase.repo.CreateLink(ctx, link.Url); err != nil {
+		return nil, err
+	}
+
+	linkNew, err := usecase.repo.GetLinkByURL(ctx, link.Url)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := usecase.repo.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
+		return nil, err
+	}
+	
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
 	return linkNew, nil
 }
 
+
 func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 
-	if link.Url == "" {
-		return ErrEmptyLink
-	}
-
-	usecase.hub.RemoveLink(link.Url, userID)
-
-	linkNew, err := usecase.storage.GetLinkByURL(ctx, link.Url)
+	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
 
-	if err := usecase.storage.DeleteLink(ctx, linkNew.ID); err != nil {
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+			}
+		}
+	}()
+
+	if link.Url == "" {
+		err := ErrEmptyLink
+		return err
+	}
+
+	usecase.scheduler.RemoveLink(link.Url, userID)
+
+	linkNew, err := usecase.repo.GetLinkByURL(ctx, link.Url)
+	if err != nil {
+		return err
+	}
+
+	if err := usecase.repo.DeleteLink(ctx, linkNew.ID); err != nil {
 		return err
 	}
 	
