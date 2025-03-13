@@ -25,6 +25,7 @@ func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commit
 	}, nil
 }
 
+//NON-BLOCKING
 func (kp *KafkaProducer) Run() {
 	const op = "KafkaProducer.Run"
 	kp.logger.Info(op, slog.String("msg", "Kafka producer is running"))
@@ -57,7 +58,6 @@ func (kp *KafkaProducer) Stop() {
 	kp.logger.Warn(op, slog.String("msg", "Stopping Kafka producer"))
 	kp.producer.Close()
 	close(kp.stopCh)
-	close(kp.commitCh)
 }
 
 func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit, topic string) error {

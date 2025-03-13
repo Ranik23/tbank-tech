@@ -16,7 +16,7 @@ type Pair [2]string
 
 type CustomCommit struct {
 	Commit *github.RepositoryCommit	`json:"commit"`
-	UserID uint					`json:"user_id"`
+	UserID uint						`json:"user_id"`
 }
 
 type Hub struct {
@@ -42,6 +42,7 @@ func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *sl
 	}
 }
 
+//NON-BLOCKING
 func (h *Hub) Run() {
 	const op = "Hub.Run"
 	h.logger.Info(op, slog.String("message", "Hub is running..."))

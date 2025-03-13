@@ -14,11 +14,11 @@ import (
 	"tbank/bot/internal/bot-usecase"
 	grpcserver "tbank/bot/internal/grpc-server"
 //	kafkacosumer "tbank/bot/internal/kafka-cosumer"
-	telegramproducer "tbank/bot/internal/telegram-producer"
+//	telegramproducer "tbank/bot/internal/telegram-producer"
 	"tbank/bot/internal/usecase"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	//"github.com/confluentinc/confluent-kafka-go/kafka"
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
@@ -61,9 +61,9 @@ func NewApp() (*App, error) {
 		return nil, err	
 	}
 
-	messagesCh := make(chan kafka.Message)
+	//messagesCh := make(chan kafka.Message)
 
-	telegramProducer := telegramproducer.NewTelegramProducer(bot, messagesCh)
+	//telegramProducer := telegramproducer.NewTelegramProducer(bot, messagesCh)
 
 	useCase := usecase.NewUseCaseImp(bot)
 
