@@ -19,6 +19,9 @@ import (
 )
 
 func TestHub_AddLink_SendsCommitToKafkaAndReceivesIt(t *testing.T) {
+
+//											SETTING UP AND STARTING HUB AND KAFKA CONSUMER											//
+//----------------------------------------------------------------------------------------------------------------------------------//
 	
 	addresses := []string{"localhost:9093"}
 	linkExample := "https://github.com/Ranik23/tbank-tech"
@@ -52,7 +55,6 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create a new async producer: %v", err)
 	}
-	// закрываем в хабе
 
 	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh)
 	if err != nil {
@@ -67,7 +69,8 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesIt(t *testing.T) {
 
 	myHub.AddLink(linkExample, 1)
 
-	//---------------------------------------------------------------------------------------------------------------------//
+//															CONSUMER STARTING                                                       // 
+//----------------------------------------------------------------------------------------------------------------------------------//
 
 	kafkaConsumer, err := sarama.NewConsumer(addresses, saramaConfig)
 	if err != nil {

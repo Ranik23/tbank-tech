@@ -14,7 +14,7 @@ import (
 
 func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 
-//											SETTING UP AND STARTING HUB AND KAFKA CONSUMER														//
+//											SETTING UP AND STARTING HUB AND KAFKA CONSUMER											//
 //----------------------------------------------------------------------------------------------------------------------------------//
 
 	addresses := []string{"localhost:9093"}
@@ -93,7 +93,7 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 	myHub.AddLink(linkExample, 1)
 
 
-//															CONSUMER STARTING
+//															CONSUMER STARTING                                                       // 
 //----------------------------------------------------------------------------------------------------------------------------------//
 
 	kafkaConsumer, err := sarama.NewConsumer(addresses, saramaConfig)
