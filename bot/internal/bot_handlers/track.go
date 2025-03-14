@@ -2,16 +2,15 @@ package bothandlers
 
 import (
 	"sync"
-	"tbank/bot/internal/bot-usecase"
+	botusecase "tbank/bot/internal/bot_usecase"
 
 	"gopkg.in/telebot.v3"
 )
 
-
-func StartHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
+func TrackHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		userID := c.Sender().ID
-
+		
 		userRaw, exists := users.Load(userID)
 		var user *User
 		if !exists {
@@ -21,9 +20,8 @@ func StartHandler(usecase botusecase.UseCase, users *sync.Map) telebot.HandlerFu
 			user = userRaw.(*User)
 		}
 
-		user.state = StateWaitingForTheToken
+		user.state = StateWaitingForLinkLINK
 		users.Store(userID, user)
-
-		return c.Send("Введите персональный токен")
+		return c.Send("Введите ссылку, которую хотите отслеживать")
 	}
 }

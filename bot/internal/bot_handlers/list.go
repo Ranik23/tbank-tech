@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"tbank/bot/internal/bot-usecase"
+	botusecase "tbank/bot/internal/bot_usecase"
 
 	"gopkg.in/telebot.v3"
 )

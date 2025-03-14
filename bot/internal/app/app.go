@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"tbank/bot/api/proto/gen"
 	"tbank/bot/config"
-	handlers "tbank/bot/internal/bot-handlers"
-	"tbank/bot/internal/bot-usecase"
-	grpcserver "tbank/bot/internal/grpc-server"
+	bothandlers "tbank/bot/internal/bot_handlers"
+	botusecase "tbank/bot/internal/bot_usecase"
+	grpcserver "tbank/bot/internal/grpcserver"
 //	kafkacosumer "tbank/bot/internal/kafka-cosumer"
 //	telegramproducer "tbank/bot/internal/telegram-producer"
 	"tbank/bot/internal/usecase"
@@ -69,12 +69,12 @@ func NewApp() (*App, error) {
 
 	var users sync.Map
 
-	bot.Handle("/start", handlers.StartHandler(botUseCase, &users))
-	bot.Handle("/help", handlers.HelpHandler(botUseCase, &users))
-	bot.Handle("/track", handlers.TrackHandler(botUseCase, &users))
-	bot.Handle("/untrack", handlers.UnTrackHandler(botUseCase, &users))
-	bot.Handle("/list", handlers.ListHandler(botUseCase, &users))
-	bot.Handle(telebot.OnText, handlers.MessageHandler(botUseCase, &users))
+	bot.Handle("/start", bothandlers.StartHandler(botUseCase, &users))
+	bot.Handle("/help", bothandlers.HelpHandler(botUseCase, &users))
+	bot.Handle("/track", bothandlers.TrackHandler(botUseCase, &users))
+	bot.Handle("/untrack", bothandlers.UnTrackHandler(botUseCase, &users))
+	bot.Handle("/list", bothandlers.ListHandler(botUseCase, &users))
+	bot.Handle(telebot.OnText, bothandlers.MessageHandler(botUseCase, &users))
 
 	grpcBotServer := grpcserver.NewBotServer(useCase, bot)
 

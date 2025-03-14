@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	botusecase "tbank/bot/internal/bot-usecase"
+	botusecase "tbank/bot/internal/bot_usecase"
 
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/telebot.v3"

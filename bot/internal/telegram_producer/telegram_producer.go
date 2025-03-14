@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/IBM/sarama"
 	"github.com/google/go-github/v69/github"
 	"gopkg.in/telebot.v3"
 )
@@ -14,21 +14,25 @@ type CustomCommit struct {
 	UserID uint						`json:"user_id"`
 }
 
+type TelegramBot interface {
+	Send(to telebot.Recipient, what interface{}, opts ...interface{}) (*telebot.Message, error) 
+}
+
 
 type TelegramProducer struct {
-	bot 		*telebot.Bot
-	messageCh 	chan kafka.Message
+	bot 		TelegramBot
+	messageCh 	chan sarama.ConsumerMessage
 	stopCh		chan struct{}
 	logger		*slog.Logger
 }
 
 
-func NewTelegramProducer(telegramBot *telebot.Bot, logger *slog.Logger, messagesCh chan kafka.Message) *TelegramProducer {
+func NewTelegramProducer(telegramBot TelegramBot, logger *slog.Logger, messagesCh chan sarama.ConsumerMessage) *TelegramProducer {
 	return &TelegramProducer{
-		bot: telegramBot,
-		messageCh: messagesCh,
-		stopCh: make(chan struct{}),
-		logger: logger,
+		bot: 		telegramBot,
+		messageCh: 	messagesCh,
+		stopCh: 	make(chan struct{}),
+		logger: 	logger,
 	}
 }
 
