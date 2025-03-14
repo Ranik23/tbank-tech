@@ -80,7 +80,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	usecase , err := usecase.NewUseCaseImpl(nil, hub, logger)
+	usecase , err := usecase.NewUseCase(nil, hub, logger)
 	if err != nil {
 		return nil, err
 	}
