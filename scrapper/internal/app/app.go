@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
-	"tbank/scrapper/internal/closer"
+	"tbank/scrapper/pkg/closer"
 	grpcserver "tbank/scrapper/internal/controllers/grpc"
 	"tbank/scrapper/internal/gateway"
 	"tbank/scrapper/internal/hub"
@@ -28,7 +28,7 @@ type App struct {
 	config     		*config.Config
 	logger     		*slog.Logger
 	kafkaProducer 	*kafkaproducer.KafkaProducer
-	hub				*hub.Hub
+	hub				hub.Hub
 	closer			*closer.Closer
 }
 
@@ -80,7 +80,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	usecase , err := usecase.NewUseCaseImpl(cfg, nil, hub, logger)
+	usecase , err := usecase.NewUseCaseImpl(nil, hub, logger)
 	if err != nil {
 		return nil, err
 	}

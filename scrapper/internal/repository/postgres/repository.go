@@ -1,4 +1,4 @@
-package db
+package postgres
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/models"
+	"tbank/scrapper/internal/repository"
+	tx"tbank/scrapper/internal/repository/txmanager"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,32 +17,13 @@ var (
 	ErrUniqueViolation = "23505"
 )
 
-type Repository interface {
-
-	TxManager
-
-	CreateLink(ctx context.Context, link string) 					error
-	CreateUser(ctx context.Context, userID uint, name string) 		error
-	CreateLinkUser(ctx context.Context, linkID uint, userID uint) 	error
-
-	DeleteUser(ctx context.Context, userID uint) 					error
-	DeleteLink(ctx context.Context, linkID uint) 					error
-	DeleteLinkUser(ctx context.Context, linkID uint, userID uint) 	error
-
-	GetURLS(ctx context.Context, userID uint) 						([]dbmodels.Link, error)
-	GetLinkByID(ctx context.Context, id uint) 						(*dbmodels.Link, error)
-	GetLinkByURL(ctx context.Context, url string) 					(*dbmodels.Link, error)
-}
-
 type postgresRepository struct {
-
-	TxManager
-
+	tx.TxManager
 	pool *pgxpool.Pool
 	cfg  *config.Config
 }
 
-func NewpostgresRepository(cfg *config.Config) (Repository, error) {
+func NewpostgresRepository(cfg *config.Config) (repository.Repository, error) {
 	
 	databaseURL := fmt.Sprintf("%s:%s", cfg.DataBase.Host, cfg.DataBase.Port)
 	
@@ -53,7 +36,7 @@ func NewpostgresRepository(cfg *config.Config) (Repository, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	txManager := NewTransactionManager(pool)
+	txManager := tx.NewTransactionManager(pool)
 
 	return &postgresRepository{
 		pool: pool,

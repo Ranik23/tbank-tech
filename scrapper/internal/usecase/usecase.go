@@ -4,21 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"tbank/scrapper/config"
 	dbmodels "tbank/scrapper/internal/models"
-	scheduler "tbank/scrapper/internal/hub"
-	"tbank/scrapper/internal/storage/db/postgres"
+	"tbank/scrapper/internal/hub"
+	"tbank/scrapper/internal/repository"
 )
 
 
 var (
 	ErrEmptyLink = fmt.Errorf("empty link")
-)
-
-const (
 	EmptyLink = ""
 )
-
 
 type UseCase interface {
 	RegisterUser(ctx context.Context, userID uint, name string) 										error
@@ -30,16 +25,14 @@ type UseCase interface {
 
 type usecaseImpl struct {
 	logger 		*slog.Logger
-	scheduler	*scheduler.Hub
-	cfg 		*config.Config
-	repo		db.Repository
+	hub			hub.Hub
+	repo		repository.Repository
 }
 
-func NewUseCaseImpl(cfg *config.Config, repository db.Repository, scheduler *scheduler.Hub, logger *slog.Logger) (UseCase, error) {
+func NewUseCaseImpl(repo repository.Repository, hub hub.Hub, logger *slog.Logger) (UseCase, error) {
 	return &usecaseImpl{
-		cfg: cfg,
-		repo: repository,
-		scheduler: scheduler,
+		repo: repo,
+		hub: hub,
 		logger: logger,
 	}, nil
 }
@@ -74,7 +67,7 @@ func (usecase *usecaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmode
 }
 
 func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
-	tx, err := usecase.repo.BeginTx(ctx)
+	tx, err := usecase.repo.BeginTx(ctx) // может все-таки явно указать что это менеджер?
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +85,7 @@ func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 		return nil, err
 	}
 
-	usecase.scheduler.AddLink(link.Url, userID)
+	usecase.hub.AddLink(link.Url, userID)
 
 	if err := usecase.repo.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
@@ -116,7 +109,6 @@ func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 
 
 func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
-
 	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return err
@@ -135,7 +127,7 @@ func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, u
 		return err
 	}
 
-	usecase.scheduler.RemoveLink(link.Url, userID)
+	usecase.hub.RemoveLink(link.Url, userID)
 
 	linkNew, err := usecase.repo.GetLinkByURL(ctx, link.Url)
 	if err != nil {

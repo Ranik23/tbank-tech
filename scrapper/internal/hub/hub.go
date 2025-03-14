@@ -19,7 +19,14 @@ type CustomCommit struct {
 	UserID uint						`json:"user_id"`
 }
 
-type Hub struct {
+type Hub interface {
+	Run()
+	Stop()
+	AddLink(link string, userID uint)
+	RemoveLink(link string, userID uint)
+}
+
+type hub struct {
 	gitClient       git.GitHubClient
 	pairCancelFunc  *syncmap.SyncMap[Pair, context.CancelFunc]
 	latestCommitSHA *syncmap.SyncMap[string, string]
@@ -28,11 +35,11 @@ type Hub struct {
 	logger          *slog.Logger
 }
 
-func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *slog.Logger) *Hub {
+func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *slog.Logger) Hub{
 	const op = "Hub.NewHub"
 	logger.Info(op, slog.String("message", "Creating new Hub"))
 
-	return &Hub{
+	return &hub{
 		gitClient:       gitClient,
 		commitChan:      commitChan,
 		logger:          logger,
@@ -43,7 +50,7 @@ func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *sl
 }
 
 //NON-BLOCKING
-func (h *Hub) Run() {
+func (h *hub) Run() {
 	const op = "Hub.Run"
 	h.logger.Info(op, slog.String("message", "Hub is running..."))
 
@@ -60,7 +67,7 @@ func (h *Hub) Run() {
 	}()
 }
 
-func (h *Hub) AddLink(link string, userID uint) {
+func (h *hub) AddLink(link string, userID uint) {
 	const op = "Hub.AddLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	owner, repo, err := utils.GetLinkParams(link)
@@ -106,7 +113,7 @@ func (h *Hub) AddLink(link string, userID uint) {
 	}()
 }
 
-func (h *Hub) Stop() {
+func (h *hub) Stop() {
 	const op = "Hub.Stop"
 	h.logger.Info(op, slog.String("message", "Stopping Hub..."))
 	select {
@@ -116,7 +123,7 @@ func (h *Hub) Stop() {
 	}
 }
 
-func (h *Hub) RemoveLink(link string, userID uint) {
+func (h *hub) RemoveLink(link string, userID uint) {
 	const op = "Hub.RemoveLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	cancelFuncForPair, ok := h.pairCancelFunc.Load(pair)

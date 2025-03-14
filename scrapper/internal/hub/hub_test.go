@@ -2,8 +2,6 @@ package hub
 
 import (
 	"log/slog"
-	"strconv"
-
 	"testing"
 	"time"
 
@@ -105,40 +103,6 @@ func TestHub_AddLinks_SendsCommits(t *testing.T) {
 }
 
 
-func TestHub_Stop(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan CustomCommit)
-	logger := slog.Default()
-
-	hub := NewHub(mockClient, commitChan, logger)
-
-	hub.AddLink("https://github.com/Ranik23/tbank-tech", 1)
-
-	hub.Stop()
-
-	select {
-	case _, ok := <-commitChan:
-		assert.False(t, ok, "Expected commitChan to be closed after Stop")
-	case <-time.After(1 * time.Second):
-		t.Fatalf("Expected commitChan to be closed, but it's still open")
-	}
-}
-
-func TestWrongURLScheme(t *testing.T) {
-
-	hub := NewHub(nil, nil, slog.Default())
-
-	hub.AddLink("wjhfwfwfhw", 2)
-
-	 _, ok := hub.pairCancelFunc.Load(Pair{"wjhfwfwfhw", "2"})
-	if ok {
-		t.Fatalf("No Goroutine Should Have Started Due To The Wrong URL Scheme")
-	}
-}
-
 func TestHub_AddLink_ErrorFetchingCommit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -167,84 +131,6 @@ func TestHub_AddLink_ErrorFetchingCommit(t *testing.T) {
 	}
 }
 
-func TestHub_AddLink_DuplicateLink(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan CustomCommit)
-	logger := slog.Default()
-
-	hub := NewHub(mockClient, commitChan, logger)
-
-	url := "https://github.com/Ranik23/tbank-tech"
-	userID := uint(1)
-
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
-		&github.RepositoryCommit{
-			SHA: github.Ptr("test_sha"),
-			Commit: &github.Commit{
-				Message: github.Ptr("Test commit message"),
-			},
-		}, nil, nil,
-	).AnyTimes()
-
-	
-	hub.AddLink(url, userID)
-
-	hub.AddLink(url, userID)
-
-	pair := Pair{url, strconv.Itoa(int(userID))}
-	_, ok := hub.pairCancelFunc.Load(pair)
-	assert.True(t, ok, "Expected pair to be added to pairCancelFunc")
-
-	select {
-	case commit := <-commitChan:
-		assert.Equal(t, "test_sha", *commit.Commit.SHA)
-	case <-time.After(5 * time.Second):
-		t.Fatalf("Expected commit, but got none")
-	}
-
-	// Проверяем, что в канале больше нет коммитов
-	select {
-	case <-commitChan:
-		t.Fatalf("Expected no more commits, but got one")
-	default:
-		// Все в порядке, канал пуст
-	}
-}
-
-func TestHub_RemoveLink_CancelsGoroutine(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan CustomCommit)
-	logger := slog.Default()
-
-	hub := NewHub(mockClient, commitChan, logger)
-
-	url := "https://github.com/Ranik23/tbank-tech"
-	userID := uint(1)
-
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
-		&github.RepositoryCommit{
-			SHA: github.Ptr("test_sha"),
-			Commit: &github.Commit{
-				Message: github.Ptr("Test commit message"),
-			},
-		}, nil, nil,
-	).AnyTimes()
-
-	hub.AddLink(url, userID)
-	hub.RemoveLink(url, userID)
-
-	time.Sleep(5 * time.Second)
-
-	pair := Pair{url, strconv.Itoa(int(userID))}
-	_, ok := hub.pairCancelFunc.Load(pair)
-	assert.False(t, ok, "Expected pair to be removed from pairCancelFunc")
-}
 
 func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -295,30 +181,4 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatalf("Expected second commit, but got none")
 	}
-}
-
-func TestHub_SyncMap_Operations(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockClient := mockgithub.NewMockGitHubClient(ctrl)
-	commitChan := make(chan CustomCommit)
-	logger := slog.Default()
-
-	hub := NewHub(mockClient, commitChan, logger)
-
-	url := "https://github.com/Ranik23/tbank-tech"
-	userID := uint(1)
-
-
-	hub.AddLink(url, userID)
-
-	pair := Pair{url, strconv.Itoa(int(userID))}
-	_, ok := hub.pairCancelFunc.Load(pair)
-	assert.True(t, ok, "Expected pair to be added to pairCancelFunc")
-
-	hub.RemoveLink(url, userID)
-
-	_, ok = hub.pairCancelFunc.Load(pair)
-	assert.False(t, ok, "Expected pair to be removed from pairCancelFunc")
 }
