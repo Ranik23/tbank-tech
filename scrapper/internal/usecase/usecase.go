@@ -12,7 +12,7 @@ import (
 
 var (
 	ErrEmptyLink = fmt.Errorf("empty link")
-	EmptyLink = ""
+	EmptyLinkURL = ""
 )
 
 type UseCase interface {
@@ -23,21 +23,21 @@ type UseCase interface {
 	RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) 									error
 }
 
-type usecaseImpl struct {
+type usecase struct {
 	logger 		*slog.Logger
 	hub			hub.Hub
 	repo		repository.Repository
 }
 
-func NewUseCaseImpl(repo repository.Repository, hub hub.Hub, logger *slog.Logger) (UseCase, error) {
-	return &usecaseImpl{
+func NewUseCase(repo repository.Repository, hub hub.Hub, logger *slog.Logger) (UseCase, error) {
+	return &usecase{
 		repo: repo,
 		hub: hub,
 		logger: logger,
 	}, nil
 }
 
-func (usecase *usecaseImpl) RegisterUser(ctx context.Context, userID uint, name string) error {
+func (usecase *usecase) RegisterUser(ctx context.Context, userID uint, name string) error {
 	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return err
@@ -47,27 +47,28 @@ func (usecase *usecaseImpl) RegisterUser(ctx context.Context, userID uint, name 
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
 				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
 	}()
 
-	if err := usecase.repo.CreateUser(ctx, userID, name); err != nil {
+	if err = usecase.repo.CreateUser(ctx, userID, name); err != nil {
 		return err
 	}
 
 	return tx.Commit(ctx)
 }
 
-func (usecase *usecaseImpl) DeleteUser(ctx context.Context, userID uint) error {
+func (usecase *usecase) DeleteUser(ctx context.Context, userID uint) error {
 	return usecase.repo.DeleteUser(ctx, userID)
 }
 
-func (usecase *usecaseImpl) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
+func (usecase *usecase) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	return usecase.repo.GetURLS(ctx, userID)
 }
 
-func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
-	tx, err := usecase.repo.BeginTx(ctx) // может все-таки явно указать что это менеджер?
+func (usecase *usecase) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
+	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -76,18 +77,19 @@ func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
 				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
 	}()
 
-	if link.Url == EmptyLink {
-		err := ErrEmptyLink
+	if link.Url == EmptyLinkURL {
+		err = ErrEmptyLink
 		return nil, err
 	}
 
 	usecase.hub.AddLink(link.Url, userID)
 
-	if err := usecase.repo.CreateLink(ctx, link.Url); err != nil {
+	if err = usecase.repo.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
 	}
 
@@ -96,11 +98,11 @@ func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 		return nil, err
 	}
 
-	if err := usecase.repo.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
+	if err = usecase.repo.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
 		return nil, err
 	}
 	
-	if err := tx.Commit(ctx); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -108,7 +110,7 @@ func (usecase *usecaseImpl) AddLink(ctx context.Context, link dbmodels.Link, use
 }
 
 
-func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
+func (usecase*usecase) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 	tx, err := usecase.repo.BeginTx(ctx)
 	if err != nil {
 		return err
@@ -118,12 +120,13 @@ func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, u
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
 				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
 	}()
 
 	if link.Url == "" {
-		err := ErrEmptyLink
+		err = ErrEmptyLink
 		return err
 	}
 
@@ -134,9 +137,9 @@ func (usecase*usecaseImpl) RemoveLink(ctx context.Context, link dbmodels.Link, u
 		return err
 	}
 
-	if err := usecase.repo.DeleteLink(ctx, linkNew.ID); err != nil {
+	if err = usecase.repo.DeleteLink(ctx, linkNew.ID); err != nil {
 		return err
 	}
 	
-	return nil
+	return tx.Commit(ctx)
 }
