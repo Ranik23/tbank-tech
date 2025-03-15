@@ -12,22 +12,25 @@ import (
 	"tbank/bot/config"
 	bothandlers "tbank/bot/internal/bot_handlers"
 	botusecase "tbank/bot/internal/bot_usecase"
+	"tbank/bot/internal/closer"
 	grpcserver "tbank/bot/internal/grpcserver"
-//	kafkacosumer "tbank/bot/internal/kafka-cosumer"
-//	telegramproducer "tbank/bot/internal/telegram-producer"
+	kafkaconsumer "tbank/bot/internal/kafka_consumer"
+	telegramproducer "tbank/bot/internal/telegram_producer"
 	"tbank/bot/internal/usecase"
 	"time"
-
-	//"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/IBM/sarama"
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
 
 
 type App struct {
-	grpcServer *grpc.Server
-	config 		*config.Config
-	bot			*telebot.Bot
+	grpcServer 		*grpc.Server
+	config 			*config.Config
+	bot				*telebot.Bot
+	tgProducer 		*telegramproducer.TelegramProducer
+	kafkaConsumer 	*kafkaconsumer.KafkaConsumer
+	closer			*closer.Closer
 }
 
 
@@ -40,7 +43,14 @@ func NewApp() (*App, error) {
 
 	logger := slog.Default()
 
+	closer := closer.NewCloser(logger)
+
 	grpcServer := grpc.NewServer()
+
+	closer.Add(func() error {
+		grpcServer.Stop()
+		return nil
+	})
 
 	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, logger)
 	if err != nil {
@@ -61,9 +71,35 @@ func NewApp() (*App, error) {
 		return nil, err	
 	}
 
-	//messagesCh := make(chan kafka.Message)
+	closer.Add(func() error {
+		bot.Stop()
+		return nil
+	})
 
-	//telegramProducer := telegramproducer.NewTelegramProducer(bot, messagesCh)
+
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Consumer.Return.Errors = true
+
+	consumer, err := sarama.NewConsumer(config.Kafka.Addresses, saramaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	commitCh := make(chan sarama.ConsumerMessage)
+
+	telegramProducer := telegramproducer.NewTelegramProducer(bot, logger, commitCh)
+
+	closer.Add(func() error {
+		telegramProducer.Stop()
+		return nil
+	})
+
+	kafkaConsumer := kafkaconsumer.NewKafkaConsumer(consumer, config.Kafka.Topic, commitCh)
+
+	closer.Add(func() error {
+		kafkaConsumer.Stop()
+		return nil
+	})
 
 	useCase := usecase.NewUseCaseImp(bot)
 
@@ -84,6 +120,9 @@ func NewApp() (*App, error) {
 		grpcServer: grpcServer,
 		config: config,
 		bot: bot,
+		tgProducer: telegramProducer,
+		kafkaConsumer: kafkaConsumer,
+		closer: closer,
 	}, nil
 }
 
@@ -109,20 +148,24 @@ func (a *App) Run() error {
 		a.bot.Start()
 	}()
 
+
+	a.kafkaConsumer.Run()
+
+	a.tgProducer.Run()
+
+	
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	
 	select {
 	case err := <- errorCh:
 		if errors.Is(err, grpc.ErrServerStopped) {
 			slog.Error("grpc server stopped", slog.String("err", err.Error()))
-			return nil
+			return a.closer.Close()
 		}
 		slog.Error("failed to start the grpc-server")
-		return err
+		return a.closer.Close()
 	case <- quit:
-		slog.Info("Shutting down gRPC server...")
-		a.grpcServer.GracefulStop()
-		return nil
+		slog.Info("Shutting down")
+		return a.closer.Close()
 	}
 }

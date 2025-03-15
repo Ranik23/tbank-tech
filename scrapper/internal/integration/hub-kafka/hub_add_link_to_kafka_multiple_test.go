@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"tbank/scrapper/internal/hub"
-	kafkaproducer "tbank/scrapper/internal/kafka-producer"
+	kafkaproducer "tbank/scrapper/internal/kafka_producer"
 	git "tbank/scrapper/internal/mocks/github"
 	"testing"
 	"github.com/IBM/sarama"
@@ -19,6 +19,7 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 
 	addresses := []string{"localhost:9093"}
 	linkExample := "https://github.com/Ranik23/tbank-tech"
+	exampleTopic := "test_topic"
 
 	commitExample1 := &github.RepositoryCommit{
 		SHA: github.Ptr("test_sha"),
@@ -79,7 +80,7 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 		t.Fatalf("Failed to create a new async producer: %v", err)
 	}
 
-	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh)
+	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh, exampleTopic)
 	if err != nil {
 		t.Fatalf("Failed to create a new kafka: %v", err)
 	}
@@ -102,7 +103,7 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 	}
 	defer kafkaConsumer.Close()
 
-	partitions, err := kafkaConsumer.Partitions("1")
+	partitions, err := kafkaConsumer.Partitions(exampleTopic)
 	if err != nil {
 		t.Fatalf("Failed to list the partitions for the given topic: %v", err)
 	}
@@ -115,7 +116,7 @@ func TestHub_AddLink_SendsCommitToKafkaAndReceivesItMultiple(t *testing.T) {
 
 	theOnlyPartition := partitions[0]
 
-	partitionConsumer, err := kafkaConsumer.ConsumePartition("1", theOnlyPartition, sarama.OffsetNewest)
+	partitionConsumer, err := kafkaConsumer.ConsumePartition(exampleTopic, theOnlyPartition, sarama.OffsetNewest)
 	if err != nil {
 		t.Fatalf("Failed to create a consumer on this specific partition: %v", err)
 	}

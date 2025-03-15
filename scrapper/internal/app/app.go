@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/config"
-	"tbank/scrapper/pkg/closer"
+	"tbank/scrapper/internal/closer"
 	grpcserver "tbank/scrapper/internal/controllers/grpc"
 	"tbank/scrapper/internal/gateway"
 	"tbank/scrapper/internal/hub"
-	kafkaproducer "tbank/scrapper/internal/kafka-producer"
-	"tbank/scrapper/internal/usecase"
+	kafkaproducer "tbank/scrapper/internal/kafka_producer"
+	"tbank/scrapper/internal/service"
 	git "tbank/scrapper/pkg/github"
 
 	"github.com/IBM/sarama"
@@ -62,8 +62,10 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	kafkaTopic := cfg.Kafka.Topic
 	
-	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh)
+	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh, kafkaTopic)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	usecase , err := usecase.NewUseCase(nil, hub, logger)
+	usecase , err := service.NewService(nil, hub, logger)
 	if err != nil {
 		return nil, err
 	}

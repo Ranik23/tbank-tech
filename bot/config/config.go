@@ -2,8 +2,15 @@ package config
 
 import (
 	"log"
+	"strings"
+
 	"github.com/spf13/viper"
 )
+
+type KafkaConfig struct {
+	Addresses []string
+	Topic 	string
+}
 
 
 type ScrapperServiceConfig struct {  
@@ -33,6 +40,7 @@ type Config struct {
 	DataBase			DataBaseConfig
 	Telegram			TelegramConfig 
 	TelegramBotServer	TelegramBotServerConfig
+	Kafka				KafkaConfig
 }
 
 
@@ -57,6 +65,10 @@ func LoadConfig() (*Config, error) {
 		},
 		Telegram: TelegramConfig{
 			Token: viper.GetString("TELERGAM_TOKEN"),
+		},
+		Kafka: KafkaConfig{
+			Addresses: strings.Split(viper.GetString("KAFKA_ADDRESSES"), " "),
+			Topic: viper.GetString("KAFKA_TOPIC"),
 		},
 	}, nil
 

@@ -1,4 +1,4 @@
-package usecase
+package service
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func TestAddLink_Success(t *testing.T) {
 	hubMock := hub.NewMockHub(ctrl)
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1) 
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
@@ -70,7 +70,7 @@ func TestAddLink_Fail(t *testing.T) {
 
 	hubMock := hub.NewMockHub(ctrl)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
@@ -104,7 +104,7 @@ func TestAddLink_GetTheLinkByURL_Fail(t *testing.T) {
 	hubMock := hub.NewMockHub(ctrl)
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1) 
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
@@ -139,7 +139,7 @@ func TestAddLink_CreateLink_Fail(t *testing.T) {
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1) 
 
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -174,7 +174,7 @@ func TestAddLink_CreateLinkUser_Fail(t *testing.T) {
 	hubMock := hub.NewMockHub(ctrl)
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -209,7 +209,7 @@ func TestAddLink_Commit_Fail(t *testing.T) {
 	hubMock := hub.NewMockHub(ctrl)
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -246,7 +246,7 @@ func TestAddLink_Rollback_Fail(t *testing.T) {
 	hubMock := hub.NewMockHub(ctrl)
 	hubMock.EXPECT().AddLink(exampleLink.Url, exampleID).Times(1)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

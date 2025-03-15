@@ -4,15 +4,15 @@ import (
 	"context"
 	"tbank/scrapper/api/proto/gen"
 	"tbank/scrapper/internal/models"
-	"tbank/scrapper/internal/usecase"
+	"tbank/scrapper/internal/service"
 )
 
 type ScrapperServer struct {
 	gen.UnimplementedScrapperServer
-	usecase usecase.UseCase
+	usecase service.Service
 }
 
-func NewScrapperServer(usecase usecase.UseCase) *ScrapperServer {
+func NewScrapperServer(usecase service.Service) *ScrapperServer {
 	return &ScrapperServer{
 		usecase: usecase,
 	}

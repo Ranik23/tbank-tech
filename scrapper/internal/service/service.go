@@ -1,4 +1,4 @@
-package usecase
+package service
 
 import (
 	"context"
@@ -15,7 +15,7 @@ var (
 	EmptyLinkURL = ""
 )
 
-type UseCase interface {
+type Service interface {
 	RegisterUser(ctx context.Context, userID uint, name string) 										error
 	DeleteUser(ctx context.Context, userID uint) 														error
 	GetLinks(ctx context.Context, userID uint) 															([]dbmodels.Link, error)
@@ -23,22 +23,22 @@ type UseCase interface {
 	RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) 									error
 }
 
-type usecase struct {
+type service struct {
 	logger 		*slog.Logger
 	hub			hub.Hub
 	repo		repository.Repository
 }
 
-func NewUseCase(repo repository.Repository, hub hub.Hub, logger *slog.Logger) (UseCase, error) {
-	return &usecase{
+func NewService(repo repository.Repository, hub hub.Hub, logger *slog.Logger) (Service, error) {
+	return &service{
 		repo: repo,
 		hub: hub,
 		logger: logger,
 	}, nil
 }
 
-func (usecase *usecase) RegisterUser(ctx context.Context, userID uint, name string) error {
-	tx, err := usecase.repo.BeginTx(ctx)
+func (s *service) RegisterUser(ctx context.Context, userID uint, name string) error {
+	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -46,29 +46,29 @@ func (usecase *usecase) RegisterUser(ctx context.Context, userID uint, name stri
 	defer func() {
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
-				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				s.logger.Error("transaction rollback failed", "error", rollbackErr)
 				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
 	}()
 
-	if err = usecase.repo.CreateUser(ctx, userID, name); err != nil {
+	if err = s.repo.CreateUser(ctx, userID, name); err != nil {
 		return err
 	}
 
 	return tx.Commit(ctx)
 }
 
-func (usecase *usecase) DeleteUser(ctx context.Context, userID uint) error {
-	return usecase.repo.DeleteUser(ctx, userID)
+func (s *service) DeleteUser(ctx context.Context, userID uint) error {
+	return s.repo.DeleteUser(ctx, userID)
 }
 
-func (usecase *usecase) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
-	return usecase.repo.GetURLS(ctx, userID)
+func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
+	return s.repo.GetURLS(ctx, userID)
 }
 
-func (usecase *usecase) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
-	tx, err := usecase.repo.BeginTx(ctx)
+func (s *service) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
+	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (usecase *usecase) AddLink(ctx context.Context, link dbmodels.Link, userID 
 	defer func() {
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
-				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				s.logger.Error("transaction rollback failed", "error", rollbackErr)
 				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
@@ -87,18 +87,18 @@ func (usecase *usecase) AddLink(ctx context.Context, link dbmodels.Link, userID 
 		return nil, err
 	}
 
-	usecase.hub.AddLink(link.Url, userID)
+	s.hub.AddLink(link.Url, userID)
 
-	if err = usecase.repo.CreateLink(ctx, link.Url); err != nil {
+	if err = s.repo.CreateLink(ctx, link.Url); err != nil {
 		return nil, err
 	}
 
-	linkNew, err := usecase.repo.GetLinkByURL(ctx, link.Url)
+	linkNew, err := s.repo.GetLinkByURL(ctx, link.Url)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = usecase.repo.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
+	if err = s.repo.CreateLinkUser(ctx, linkNew.ID, userID); err != nil {
 		return nil, err
 	}
 	
@@ -110,8 +110,8 @@ func (usecase *usecase) AddLink(ctx context.Context, link dbmodels.Link, userID 
 }
 
 
-func (usecase*usecase) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
-	tx, err := usecase.repo.BeginTx(ctx)
+func (s *service) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
+	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (usecase*usecase) RemoveLink(ctx context.Context, link dbmodels.Link, userI
 	defer func() {
 		if err != nil {
 			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
-				usecase.logger.Error("transaction rollback failed", "error", rollbackErr)
+				s.logger.Error("transaction rollback failed", "error", rollbackErr)
 				err = fmt.Errorf("original error: %w, rollback error: %w", err, rollbackErr)
 			}
 		}
@@ -130,14 +130,14 @@ func (usecase*usecase) RemoveLink(ctx context.Context, link dbmodels.Link, userI
 		return err
 	}
 
-	usecase.hub.RemoveLink(link.Url, userID)
+	s.hub.RemoveLink(link.Url, userID)
 
-	linkNew, err := usecase.repo.GetLinkByURL(ctx, link.Url)
+	linkNew, err := s.repo.GetLinkByURL(ctx, link.Url)
 	if err != nil {
 		return err
 	}
 
-	if err = usecase.repo.DeleteLink(ctx, linkNew.ID); err != nil {
+	if err = s.repo.DeleteLink(ctx, linkNew.ID); err != nil {
 		return err
 	}
 	

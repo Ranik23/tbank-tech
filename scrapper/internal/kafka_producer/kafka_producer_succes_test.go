@@ -33,6 +33,7 @@ func TestKafkaProducerSucces(t *testing.T) {
         logger:   logger,
         producer: mockProducer,
         commitCh: commitCh,
+        topicToSend: "test",
         stopCh: make(chan struct{}),
     }
 

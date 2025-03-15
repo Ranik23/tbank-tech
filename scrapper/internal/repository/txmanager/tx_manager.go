@@ -8,7 +8,7 @@ import (
 )
 
 type TxManager interface {
-	BeginTx(ctx context.Context) 				(pgx.Tx, error)
+	BeginTx(ctx context.Context) (pgx.Tx, error)
 }
 
 type transactionManager struct {

@@ -10,18 +10,20 @@ import (
 )
 
 type KafkaProducer struct {
-	logger   *slog.Logger
-	producer sarama.AsyncProducer
-	commitCh chan hub.CustomCommit
-	stopCh   chan struct{}
+	logger   		*slog.Logger
+	producer 		sarama.AsyncProducer
+	commitCh 		chan hub.CustomCommit
+	topicToSend		string
+	stopCh   		chan struct{}
 }
 
-func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commitCh chan hub.CustomCommit) (*KafkaProducer, error) {
+func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commitCh chan hub.CustomCommit, topic string) (*KafkaProducer, error) {
 	return &KafkaProducer{
 		logger:   logger,
 		producer: producer,
 		commitCh: commitCh,
 		stopCh:   make(chan struct{}),
+		topicToSend: topic,
 	}, nil
 }
 
@@ -39,7 +41,7 @@ func (kp *KafkaProducer) Run() {
 				}
 				topicUserID := strconv.Itoa(int(commit.UserID))
 
-				if err := kp.produceCommit(commit, topicUserID); err != nil {
+				if err := kp.produceCommit(commit); err != nil {
 					kp.logger.Error(op, slog.String("topic", topicUserID), slog.String("error", err.Error()))
 				} else {
 					kp.logger.Info(op, slog.String("user_id", topicUserID), slog.String("msg", "Produced commit successfully"))
@@ -60,7 +62,7 @@ func (kp *KafkaProducer) Stop() {
 	close(kp.stopCh)
 }
 
-func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit, topic string) error {
+func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit) error {
 	const op = "KafkaProducer.produceCommit"
 	commitJSON, err := json.Marshal(commit)
 	if err != nil {
@@ -69,7 +71,7 @@ func (kp *KafkaProducer) produceCommit(commit hub.CustomCommit, topic string) er
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: topic,
+		Topic: kp.topicToSend,
 		Value: sarama.ByteEncoder(commitJSON),
 	}
 

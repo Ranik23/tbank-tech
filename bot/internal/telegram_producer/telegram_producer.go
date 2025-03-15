@@ -1,18 +1,14 @@
 package telegramproducer
 
 import (
-	"encoding/json"
+
 	"log/slog"
+	"tbank/bot/internal/telegram_producer/utils"
 
 	"github.com/IBM/sarama"
 	"github.com/google/go-github/v69/github"
 	"gopkg.in/telebot.v3"
 )
-
-type CustomCommit struct {
-	Commit *github.RepositoryCommit	`json:"commit"`
-	UserID uint						`json:"user_id"`
-}
 
 type TelegramBot interface {
 	Send(to telebot.Recipient, what interface{}, opts ...interface{}) (*telebot.Message, error) 
@@ -21,18 +17,20 @@ type TelegramBot interface {
 
 type TelegramProducer struct {
 	bot 		TelegramBot
-	messageCh 	chan sarama.ConsumerMessage
+	commitCh 	chan sarama.ConsumerMessage
 	stopCh		chan struct{}
 	logger		*slog.Logger
+	workerDone 	chan struct{}
 }
 
 
-func NewTelegramProducer(telegramBot TelegramBot, logger *slog.Logger, messagesCh chan sarama.ConsumerMessage) *TelegramProducer {
+func NewTelegramProducer(telegramBot TelegramBot, logger *slog.Logger, commitCh chan sarama.ConsumerMessage) *TelegramProducer {
 	return &TelegramProducer{
 		bot: 		telegramBot,
-		messageCh: 	messagesCh,
+		commitCh: 	commitCh,
 		stopCh: 	make(chan struct{}),
 		logger: 	logger,
+		workerDone: make(chan struct{}),
 	}
 }
 
@@ -40,23 +38,26 @@ func (tp *TelegramProducer) Run() {
 	const op = "TelegramProducer.Run"
 	tp.logger.Info(op, slog.String("msg","Telegram Producer"))
 	go func() {
+		defer close(tp.workerDone)
+
 		for {
 			select {
-			case message := <-tp.messageCh:
-				commit, err := tp.convert(message.Value)
+			case message := <-tp.commitCh:
+				tp.logger.Info("op", slog.String("msg", "got the message"))
+				commit, err := utils.ConvertFromBytesToCustomCommit(message.Value)
 				if err != nil {
 					tp.logger.Error(op, slog.String("error", err.Error()))
-					continue
+					tp.Stop()
 				}
 
 				userID := commit.UserID
 				comm := commit.Commit
 
-				if err := tp.sendMessageToUser(comm, userID); err != nil {
+				if err := tp.sendMessageToUser(int64(userID), comm); err != nil {
 					tp.logger.Error(op, slog.String("error", err.Error()))
 				}
 			case <-tp.stopCh:
-				tp.logger.Error(op, slog.String("stopped", "true"))
+				tp.logger.Error(op, slog.String("msg", "stopping the producer"))
 				return
 			}
 		}
@@ -64,20 +65,10 @@ func (tp *TelegramProducer) Run() {
 }
 
 
-func (tp *TelegramProducer) convert(message []byte) (*CustomCommit, error) {
-	const op = "TelegramProducer.convert"
-	var msg CustomCommit
-	if err := json.Unmarshal(message, &msg); err != nil {
-		tp.logger.Error(op, slog.String("error", err.Error()))
-		return nil, err
-	}
-	return &msg, nil
-}
-
-
-func (tp *TelegramProducer) sendMessageToUser(commit *github.RepositoryCommit, userID uint) error {
+func (tp *TelegramProducer) sendMessageToUser(userID int64, commit *github.RepositoryCommit) error {
 	const op = "TelegramProducer.sendMessageToUser"
-	_, err := tp.bot.Send(&telebot.User{ID: int64(userID)}, commit)
+	tp.logger.Info(op, slog.String("msg", "sending the commit"))
+	_, err := tp.bot.Send(&telebot.User{ID: userID}, commit)
 	if err != nil {
 		tp.logger.Error(op, "error", err.Error())
 		return err
@@ -85,6 +76,8 @@ func (tp *TelegramProducer) sendMessageToUser(commit *github.RepositoryCommit, u
 	return nil
 }
 
+
 func (tp *TelegramProducer) Stop() {
 	close(tp.stopCh)
+	<-tp.workerDone
 }

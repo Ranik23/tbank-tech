@@ -9,6 +9,7 @@ import (
 
 type KafkaConfig struct {
 	Addresses []string
+	Topic	  string
 }
 
 type ScrapperServerConfig struct {
@@ -66,6 +67,7 @@ func LoadConfig() (*Config, error) {
 		},
 		Kafka: KafkaConfig{
 			Addresses: strings.Split(viper.GetString("KAFKA_ADDRESSES"), " "),
+			Topic: viper.GetString("KAFKA_TOPIC"),
 		},
 	}, nil
 }

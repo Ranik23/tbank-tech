@@ -1,4 +1,5 @@
-package usecase
+package service
+
 
 import (
 	"context"
@@ -7,7 +8,6 @@ import (
 	"tbank/scrapper/internal/mocks/hub"
 	"tbank/scrapper/internal/mocks/pgx/txunit"
 	"tbank/scrapper/internal/mocks/repository"
-	"tbank/scrapper/internal/models"
 	"testing"
 	"time"
 
@@ -15,11 +15,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRemoveLink_Success(t *testing.T) {
-	exampleLink := models.Link{
-		Url: "https://github.com/Ranik23/tbank-tech",
-	}
-	exampleID := uint(1)
+
+func TestRegisterUser_Success(t *testing.T) {
+	exampleUserID := uint(1)
+	exampleName := "John Doe"
 
 	ctrl := gomock.NewController(t)
 
@@ -30,27 +29,25 @@ func TestRemoveLink_Success(t *testing.T) {
 
 	repoMock := repository.NewMockRepository(ctrl)
 	repoMock.EXPECT().BeginTx(gomock.Any()).Times(1).Return(mockTx, nil)
-	repoMock.EXPECT().GetLinkByURL(gomock.Any(), exampleLink.Url).Times(1).Return(&exampleLink, nil)
-	repoMock.EXPECT().DeleteLink(gomock.Any(), exampleLink.ID).Times(1).Return(nil)
+	repoMock.EXPECT().CreateUser(gomock.Any(), exampleUserID, exampleName).Times(1).Return(nil)
 
 	hubMock := hub.NewMockHub(ctrl)
-	hubMock.EXPECT().RemoveLink(exampleLink.Url, exampleID).Times(1)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err = usecase.RemoveLink(ctx, exampleLink, exampleID)
-	require.NoError(t, err, "Failed to remove the link")
+	err = usecase.RegisterUser(ctx, exampleUserID, exampleName)
+	require.NoError(t, err, "Failed to register the user")
 }
 
-func TestRemoveLink_Fail_EmptyLinkURL(t *testing.T) {
-	exampleLink := models.Link{
-		Url: "",
-	}
-	exampleID := uint(1)
+func TestRegisterUser_Fail_CreateUser_Error(t *testing.T) {
+	exampleUserID := uint(1)
+	exampleName := "John Doe"
+
+	ErrCreateUser := errors.New("create user failed")
 
 	ctrl := gomock.NewController(t)
 
@@ -61,26 +58,26 @@ func TestRemoveLink_Fail_EmptyLinkURL(t *testing.T) {
 
 	repoMock := repository.NewMockRepository(ctrl)
 	repoMock.EXPECT().BeginTx(gomock.Any()).Times(1).Return(mockTx, nil)
+	repoMock.EXPECT().CreateUser(gomock.Any(), exampleUserID, exampleName).Times(1).Return(ErrCreateUser)
 
 	hubMock := hub.NewMockHub(ctrl)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock, hubMock, logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err = usecase.RemoveLink(ctx, exampleLink, exampleID)
-	require.ErrorIs(t, err, ErrEmptyLink)
+	// Проверка ошибки при создании пользователя
+	err = usecase.RegisterUser(ctx, exampleUserID, exampleName)
+	require.ErrorIs(t, err, ErrCreateUser)
 }
 
-func TestRemoveLink_Fail_RollbackError(t *testing.T) {
-	exampleLink := models.Link{
-		Url: "https://github.com/Ranik23/tbank-tech",
-	}
-	exampleID := uint(1)
+func TestRegisterUser_Fail_RollbackError(t *testing.T) {
+	exampleUserID := uint(1)
+	exampleName := "John Doe"
 
-	ErrInternal := errors.New("internal error")
+	ErrCreateUser := errors.New("create user failed")
 	ErrRollback := errors.New("rollback failed")
 
 	ctrl := gomock.NewController(t)
@@ -92,18 +89,17 @@ func TestRemoveLink_Fail_RollbackError(t *testing.T) {
 
 	repoMock := repository.NewMockRepository(ctrl)
 	repoMock.EXPECT().BeginTx(gomock.Any()).Times(1).Return(mockTx, nil)
-	repoMock.EXPECT().GetLinkByURL(gomock.Any(), exampleLink.Url).Times(1).Return(&exampleLink, nil)
-	repoMock.EXPECT().DeleteLink(gomock.Any(), exampleLink.ID).Times(1).Return(ErrInternal)
+	repoMock.EXPECT().CreateUser(gomock.Any(), exampleUserID, exampleName).Times(1).Return(ErrCreateUser)
 
 	hubMock := hub.NewMockHub(ctrl)
-	hubMock.EXPECT().RemoveLink(exampleLink.Url, exampleID).Times(1)
 
-	usecase, err := NewUseCase(repoMock, hubMock, logger)
+	usecase, err := NewService(repoMock,hubMock,  logger)
 	require.NoError(t, err, "Failed to create the usecase")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err = usecase.RemoveLink(ctx, exampleLink, exampleID)
+	// Проверка ошибки при откате транзакции
+	err = usecase.RegisterUser(ctx, exampleUserID, exampleName)
 	require.ErrorAs(t, err, &ErrRollback, "Expected rollback error")
 }
