@@ -2,39 +2,10 @@ package config
 
 import (
 	"strings"
-
 	"github.com/spf13/viper"
 )
 
 
-type KafkaConfig struct {
-	Addresses []string
-	Topic	  string
-}
-
-type ScrapperServerConfig struct {
-	Host string
-	Port string
-}
-
-
-type ScrapperServerHTTPConfig struct {
-	Host string
-	Port string
-}
-
-type DataBaseConfig struct {		
-	Host 		string				
-	Port 		string			
-	Username 	string				
-	Password 	string					
-	DBName 		string					
-}
-
-type BotServerConfig struct {
-	Host string
-	Port string
-}
 
 
 type Config struct {
@@ -46,6 +17,9 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
+
+	viper.AutomaticEnv()
+	
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -68,6 +42,14 @@ func LoadConfig() (*Config, error) {
 		Kafka: KafkaConfig{
 			Addresses: strings.Split(viper.GetString("KAFKA_ADDRESSES"), " "),
 			Topic: viper.GetString("KAFKA_TOPIC"),
+		},
+		DataBase: DataBaseConfig{
+			Host: viper.GetString("DATABASE_HOST"),
+			Port: viper.GetString("DATABASE_PORT"),
+			Username: viper.GetString("DATABASE_USERNAME"),
+			Password: viper.GetString("DATABASE_PASSWORD"),
+			DBName: viper.GetString("DATABASE_NAME"),
+			SSL: viper.GetString("DATABASE_SSL"),
 		},
 	}, nil
 }
