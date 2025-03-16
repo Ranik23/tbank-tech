@@ -1,8 +1,6 @@
+//go:build integration
+
 package hubkafka
-
-
-
-
 
 import (
 	"encoding/json"
