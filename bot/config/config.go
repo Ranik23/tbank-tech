@@ -3,37 +3,8 @@ package config
 import (
 	"log"
 	"strings"
-
 	"github.com/spf13/viper"
 )
-
-type KafkaConfig struct {
-	Addresses []string
-	Topic 	string
-}
-
-
-type ScrapperServiceConfig struct {  
-	Host string							
-	Port string					
-}
-
-type TelegramBotServerConfig struct {
-	Host string
-	Port string
-}
-
-type DataBaseConfig struct {		
-	Host 		string				
-	Port 		string			
-	Username 	string				
-	Password 	string					
-	DBName 		string					
-}
-
-type TelegramConfig struct {
-	Token string
-}
 
 type Config struct {
 	ScrapperService 	ScrapperServiceConfig
@@ -45,6 +16,9 @@ type Config struct {
 
 
 func LoadConfig() (*Config, error) {
+
+	viper.AutomaticEnv()
+
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
