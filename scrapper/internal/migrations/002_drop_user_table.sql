@@ -1,2 +1,2 @@
--- 002_drop_user_table.sql
+-- +goose Down
 DROP TABLE IF EXISTS users;

@@ -1,2 +1,2 @@
--- 001_drop_link_table.sql
+-- +goose Down
 DROP TABLE IF EXISTS links;

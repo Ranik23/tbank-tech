@@ -1,2 +1,2 @@
--- 003_drop_link_user_table.sql
+-- +goose Down
 DROP TABLE IF EXISTS link_users;

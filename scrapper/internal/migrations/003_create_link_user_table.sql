@@ -1,4 +1,4 @@
--- 003_create_link_user_table.sql
+-- +goose Up
 CREATE TABLE IF NOT EXISTS link_users (
     link_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
