@@ -58,7 +58,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, logger)
+	botUseCase, err := botusecase.NewUseCaseImpl(config, logger)
 	if err != nil {
 		logger.Error("Failed to establish the connection to gRPC Scrapper Server", slog.String("error", err.Error()))
 		return nil, err
@@ -140,7 +140,7 @@ func NewApp() (*App, error) {
 
 
 func (a *App) Run() error {
-	
+
 	a.logger.Info("Starting the bot...")
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", a.config.TelegramBotServer.Host, a.config.TelegramBotServer.Port))

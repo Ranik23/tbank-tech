@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"tbank/bot/config"
-	"tbank/bot/internal/storage"
 	"tbank/scrapper/api/proto/gen"
 
 	"google.golang.org/grpc"
@@ -25,10 +24,9 @@ type UseCaseImpl struct {
 	config 	*config.Config
 	client 	gen.ScrapperClient
 	logger 	*slog.Logger
-	storage storage.Storage
 }
 
-func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog.Logger) (*UseCaseImpl, error) {
+func NewUseCaseImpl(config *config.Config, logger *slog.Logger) (*UseCaseImpl, error) {
 
 	host := config.ScrapperService.Host
 	port := config.ScrapperService.Port
@@ -43,7 +41,6 @@ func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog
 
 	return &UseCaseImpl{
 		config:  config,
-		storage: storage,
 		logger:  logger,
 		client:  client,
 	}, nil
