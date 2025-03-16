@@ -2,8 +2,10 @@ package kafkaconsumer
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/require"
@@ -16,6 +18,8 @@ import (
 func TestKafkaConsumer_ErrorOnMessage(t *testing.T) {
 	exampleTopic := "test"
 	examplePartitions := []int32{0}
+
+	logger := slog.Default()
 
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true  // Включаем ошибки
@@ -32,7 +36,7 @@ func TestKafkaConsumer_ErrorOnMessage(t *testing.T) {
 	mockPartitionConsumer.YieldError(errors.New("simulated error"))
 
 	commitCh := make(chan sarama.ConsumerMessage, 1)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh)
+	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
 
 
 	go kafkaConsumer.Run()

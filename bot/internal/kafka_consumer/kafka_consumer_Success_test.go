@@ -2,6 +2,7 @@ package kafkaconsumer
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -21,7 +22,9 @@ func TestKafkaConsumer_Success(t *testing.T) {
 
 	mockConsumer.SetTopicMetadata(map[string][]int32{
 		exampleTopic: examplePartitions,
-	})	
+	})
+
+	logger := slog.Default()
 
 	mockPartitionConsumer1 := mockConsumer.ExpectConsumePartition(exampleTopic, examplePartitions[0], sarama.OffsetNewest)
 	mockPartitionConsumer2 := mockConsumer.ExpectConsumePartition(exampleTopic, examplePartitions[1], sarama.OffsetNewest)
@@ -35,7 +38,7 @@ func TestKafkaConsumer_Success(t *testing.T) {
 	mockPartitionConsumer3.YieldMessage(&sarama.ConsumerMessage{Topic: exampleTopic, Value: []byte(messages[2])})
 
 	commitCh := make(chan sarama.ConsumerMessage)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh)
+	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
 
 
 	kafkaConsumer.Run()

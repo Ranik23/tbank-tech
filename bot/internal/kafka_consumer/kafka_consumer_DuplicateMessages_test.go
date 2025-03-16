@@ -1,9 +1,10 @@
 package kafkaconsumer
 
-
 import (
+	"log/slog"
 	"testing"
 	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,8 @@ func TestKafkaConsumer_DuplicateMessages(t *testing.T) {
 	exampleTopic := "test"
 	examplePartitions := []int32{0}
 
+	logger := slog.Default()
+
 	config := sarama.NewConfig()
 	mockConsumer := mocks.NewConsumer(t, config)
 	mockConsumer.SetTopicMetadata(map[string][]int32{exampleTopic: examplePartitions})
@@ -27,7 +30,7 @@ func TestKafkaConsumer_DuplicateMessages(t *testing.T) {
 	mockPartitionConsumer.YieldMessage(message)
 
 	commitCh := make(chan sarama.ConsumerMessage, 2)
-	kafkaConsumer:= NewKafkaConsumer(mockConsumer, exampleTopic, commitCh)
+	kafkaConsumer:= NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
 
 	kafkaConsumer.Run()
 	defer kafkaConsumer.Stop()

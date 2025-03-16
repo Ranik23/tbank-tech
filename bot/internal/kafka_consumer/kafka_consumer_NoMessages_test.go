@@ -1,7 +1,7 @@
 package kafkaconsumer
 
 import (
-
+	"log/slog"
 	"testing"
 	"time"
 
@@ -16,6 +16,8 @@ func TestKafkaConsumer_NoMessages(t *testing.T) {
 	exampleTopic := "test"
 	examplePartitions := []int32{0}
 
+	logger := slog.Default()
+
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 
@@ -24,7 +26,7 @@ func TestKafkaConsumer_NoMessages(t *testing.T) {
 	mockConsumer.ExpectConsumePartition(exampleTopic, examplePartitions[0], sarama.OffsetNewest)
 
 	commitCh := make(chan sarama.ConsumerMessage)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh)
+	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
 
 
 	kafkaConsumer.Run()

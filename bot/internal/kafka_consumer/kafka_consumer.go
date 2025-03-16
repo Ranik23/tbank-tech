@@ -13,10 +13,10 @@ type KafkaConsumer struct {
 	topic	 string
 }
 
-func NewKafkaConsumer(kafkaConsumer sarama.Consumer, topicToRead string, commitCh chan sarama.ConsumerMessage) *KafkaConsumer {
+func NewKafkaConsumer(kafkaConsumer sarama.Consumer, topicToRead string, commitCh chan sarama.ConsumerMessage, logger *slog.Logger) *KafkaConsumer {
 	return &KafkaConsumer{
 		consumer: kafkaConsumer,
-		logger: slog.Default(),
+		logger: logger,
 		topic: topicToRead,
 		commitCh: commitCh,
 		stopCh: make(chan struct{}),
