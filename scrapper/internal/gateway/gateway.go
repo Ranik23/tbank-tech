@@ -10,17 +10,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-func RunGateway(ctx context.Context, grpcAddr string, httpAddr string) error {
+func RunGateway(ctx context.Context, grpcAddr string, httpAddr string, logger *slog.Logger) error {
 	const op = "Gateway.RunGateway"
 	mux := runtime.NewServeMux()
 
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
 	if err := gen.RegisterScrapperHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
-		slog.Error(op, slog.String("message", "Failed to register gRPC handler"), slog.String("error", err.Error()))
+		logger.Error(op, slog.String("message", "Failed to register gRPC handler"), slog.String("error", err.Error()))
 		return err
 	}
 
-	slog.Info(op, slog.String("message", "Starting proxy server"), slog.String("httpAddr", httpAddr))
+	logger.Info(op, slog.String("message", "Starting proxy server"), slog.String("httpAddr", httpAddr))
 	return http.ListenAndServe(httpAddr, mux)
 }
