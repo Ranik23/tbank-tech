@@ -1,11 +1,12 @@
 module tbank
 
-go 1.22.5
+go 1.24.1
 
 require (
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/lmittmann/tint v1.0.7
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.33.0
@@ -47,7 +48,6 @@ require (
 
 require (
 	github.com/IBM/sarama v1.45.1
-	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/google/go-github/v69 v69.2.0
 	github.com/hashicorp/hcl v1.0.0 // indirect
