@@ -1,23 +1,18 @@
 package models
 
-import "gorm.io/gorm"
-
 type LinkUser struct {
-	gorm.Model
-	LinkID uint `gorm:"primaryKey;column:link_id"`
-	UserID uint `gorm:"primaryKey;column:user_id"`
-
-	LinkRef Link `gorm:"foreignKey:LinkID;references:ID;constraint:OnDelete:CASCADE"`
-	ChatRef User `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE"`
+	LinkID uint 
+	UserID uint 
+	LinkRef Link 
+	ChatRef User
 }
 
 type Link struct {
-	gorm.Model
-	Url string		`gorm:"column:url;not null"`
+	ID	uint
+	Url string
 }
 
 type User struct {
-	gorm.Model
-	UserID	uint		`gorm:"primaryKey;column:user_id"` 
-	Name	string		`gorm:"column:name"`
+	UserID	uint
+	Name	string
 }
