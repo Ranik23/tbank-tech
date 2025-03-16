@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"sync"
-	telegrambot "tbank/bot/internal/mocks/telegram_bot"
+	telegrambot "tbank/bot/internal/telegram_bot/mock"
 	"tbank/bot/internal/models"
 	"testing"
 	"time"

@@ -1,8 +1,8 @@
 package telegramproducer
 
 import (
-
 	"log/slog"
+	telegrambot "tbank/bot/internal/telegram_bot"
 	"tbank/bot/internal/telegram_producer/utils"
 
 	"github.com/IBM/sarama"
@@ -10,13 +10,9 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
-type TelegramBot interface {
-	Send(to telebot.Recipient, what interface{}, opts ...interface{}) (*telebot.Message, error) 
-}
-
 
 type TelegramProducer struct {
-	bot 		TelegramBot
+	bot 		telegrambot.TelegramBot
 	commitCh 	chan sarama.ConsumerMessage
 	stopCh		chan struct{}
 	logger		*slog.Logger
@@ -24,7 +20,7 @@ type TelegramProducer struct {
 }
 
 
-func NewTelegramProducer(telegramBot TelegramBot, logger *slog.Logger, commitCh chan sarama.ConsumerMessage) *TelegramProducer {
+func NewTelegramProducer(telegramBot telegrambot.TelegramBot, logger *slog.Logger, commitCh chan sarama.ConsumerMessage) *TelegramProducer {
 	return &TelegramProducer{
 		bot: 		telegramBot,
 		commitCh: 	commitCh,
