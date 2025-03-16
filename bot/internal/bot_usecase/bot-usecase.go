@@ -3,11 +3,13 @@ package botusecase
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"tbank/bot/config"
 	"tbank/bot/internal/storage"
 	"tbank/scrapper/api/proto/gen"
+
 	"google.golang.org/grpc"
-	"log/slog"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type UseCase interface {
@@ -31,15 +33,13 @@ func NewUseCaseImpl(config *config.Config, storage storage.Storage, logger *slog
 	host := config.ScrapperService.Host
 	port := config.ScrapperService.Port
 
-	connScrapper, err := grpc.NewClient(fmt.Sprintf("%s:%s", host, port), grpc.WithInsecure())
+	connScrapper, err := grpc.NewClient(fmt.Sprintf("%s:%s", host, port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Error("failed to connect to scrapper service", slog.String("error", err.Error()))
+		logger.Error("Failed to connect to scrapper service", slog.String("error", err.Error()))
 		return nil, err
 	}
 
 	client := gen.NewScrapperClient(connScrapper)
-
-	logger.Info("scrapper service client created", slog.String("host", host), slog.String("port", port))
 
 	return &UseCaseImpl{
 		config:  config,
