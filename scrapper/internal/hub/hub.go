@@ -2,10 +2,11 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strconv"
-	git "tbank/scrapper/pkg/github"
-	"tbank/scrapper/pkg/github/utils"
+	git "tbank/scrapper/pkg/github_client"
+	"tbank/scrapper/pkg/github_client/utils"
 	"tbank/scrapper/pkg/syncmap"
 	"time"
 
@@ -22,8 +23,8 @@ type CustomCommit struct {
 type Hub interface {
 	Run()
 	Stop()
-	AddLink(link string, userID uint)
-	RemoveLink(link string, userID uint)
+	AddLink(link string, userID uint) 	 error
+	RemoveLink(link string, userID uint) error
 }
 
 type hub struct {
@@ -49,7 +50,6 @@ func NewHub(gitClient git.GitHubClient, commitChan chan CustomCommit, logger *sl
 	}
 }
 
-//NON-BLOCKING
 func (h *hub) Run() {
 	const op = "Hub.Run"
 	h.logger.Info(op, slog.String("message", "Hub is running..."))
@@ -62,18 +62,17 @@ func (h *hub) Run() {
 			cancel()
 			return true
 		})
-
 		close(h.commitChan)
 	}()
 }
 
-func (h *hub) AddLink(link string, userID uint) {
+func (h *hub) AddLink(link string, userID uint) error {
 	const op = "Hub.AddLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	owner, repo, err := utils.GetLinkParams(link)
 	if err != nil {
 		h.logger.Error(op, slog.String("message", "Wrong URL scheme"), slog.String("err", err.Error()))
-		return
+		return fmt.Errorf("wrong url scheme")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -87,16 +86,19 @@ func (h *hub) AddLink(link string, userID uint) {
 			select {
 			case <-ctx.Done():
 				h.logger.Info(op, slog.String("message", "Context cancelled"), slog.String("link", link), slog.Int("userID", int(userID)))
-				return
+				return 
 			case <-ticker.C:
+
 				timeoutCtx, cancelTimeOut := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancelTimeOut()
 
 				commit, _, err := h.gitClient.LatestCommit(timeoutCtx, owner, repo, nil)
 				if err != nil {
 					h.logger.Error(op, slog.String("message", "Failed to fetch the latest commit"), slog.String("err", err.Error()))
+					cancelTimeOut()
 					continue
 				}
+
+				cancelTimeOut()
 
 				val, ok := h.latestCommitSHA.Load(link)
 
@@ -105,34 +107,32 @@ func (h *hub) AddLink(link string, userID uint) {
 					h.commitChan <- CustomCommit{Commit: commit, UserID: userID}
 				}
 			case <-h.stopCh:
-				cancel()
 				h.logger.Info(op, slog.String("message", "Goroutine exited"), slog.String("link", link), slog.Int("userID", int(userID)))
-				return
+				return 
 			}
 		}
 	}()
+
+	return nil
 }
 
 func (h *hub) Stop() {
 	const op = "Hub.Stop"
 	h.logger.Info(op, slog.String("message", "Stopping Hub..."))
-	select {
-	case h.stopCh <- struct{}{}:
-	default:
-		h.logger.Warn(op, slog.String("message", "Hub is already stopped"))
-	}
+	close(h.stopCh)
 }
 
-func (h *hub) RemoveLink(link string, userID uint) {
+func (h *hub) RemoveLink(link string, userID uint) error {
 	const op = "Hub.RemoveLink"
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	cancelFuncForPair, ok := h.pairCancelFunc.Load(pair)
 
 	if !ok {
-		return
+		return fmt.Errorf("pair doesn't exist")
 	} else {
 		cancelFuncForPair()
 		h.pairCancelFunc.Delete(pair)
 		h.logger.Info(op, slog.String("message", "Removed link"), slog.String("link", link), slog.Int("userID", int(userID)))
+		return nil
 	}
 }
