@@ -58,7 +58,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	botUseCase, err := service.NewUseCaseImpl(config, logger)
+	botUseCase, err := service.NewService(config, logger)
 	if err != nil {
 		logger.Error("Failed to establish the connection to gRPC Scrapper Server", slog.String("error", err.Error()))
 		return nil, err
