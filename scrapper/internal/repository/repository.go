@@ -2,17 +2,11 @@ package repository
 
 import (
 	"context"
-	tx"tbank/scrapper/internal/repository/txmanager"
-	dbmodels"tbank/scrapper/internal/models"
+	dbmodels "tbank/scrapper/internal/models"
 )
 
 
-
-
-
 type Repository interface {
-	tx.TxManager
-
 	CreateLink(ctx context.Context, link string) 					error
 	CreateUser(ctx context.Context, userID uint, name string) 		error
 	CreateLinkUser(ctx context.Context, linkID uint, userID uint) 	error
