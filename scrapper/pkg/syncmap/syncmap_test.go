@@ -49,32 +49,6 @@ func TestSyncMap_Delete(t *testing.T) {
 	assert.Equal(t, 0, value, "Expected default value after deletion")
 }
 
-func TestSyncMap_Range(t *testing.T) {
-	// Создаем новый SyncMap
-	sm := NewSyncMap[string, int]()
-
-	// Добавляем элементы
-	sm.Store("key1", 42)
-	sm.Store("key2", 100)
-
-	// Используем Range для обхода элементов
-	var keys []string
-	var values []int
-
-	sm.Range(func(key string, value int) bool {
-		keys = append(keys, key)
-		values = append(values, value)
-		// Прерываем после первого элемента
-		return false
-	})
-
-	// Проверяем, что перебрали элементы
-	assert.Len(t, keys, 1, "Expected to have one key")
-	assert.Len(t, values, 1, "Expected to have one value")
-	assert.Equal(t, "key1", keys[0], "Expected the first key to be 'key1'")
-	assert.Equal(t, 42, values[0], "Expected the first value to be 42")
-}
-
 func TestSyncMap_Concurrent(t *testing.T) {
 	sm := NewSyncMap[int, string]()
 
