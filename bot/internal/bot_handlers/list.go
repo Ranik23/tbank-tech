@@ -10,7 +10,7 @@ import (
 )
 
 
-func ListHandler(usecase service.UseCase, users *sync.Map) telebot.HandlerFunc {
+func ListHandler(usecase service.Service, users *sync.Map) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		chatID := c.Chat().ID
 		responses, err := usecase.ListLinks(context.Background(), chatID)

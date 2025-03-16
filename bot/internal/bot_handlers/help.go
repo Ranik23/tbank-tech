@@ -14,7 +14,7 @@ type User struct {
 	filters []string
 }
 
-func HelpHandler(usecase service.UseCase, users *sync.Map) telebot.HandlerFunc {
+func HelpHandler(usecase service.Service, users *sync.Map) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		c.Send("/help /start /list /track /untrack")
 		return nil
