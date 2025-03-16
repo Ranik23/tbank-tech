@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -15,24 +14,28 @@ var (
 
 
 func GetLinkParams(link string) (owner string, repoName string, err error) {
-
+	link = strings.TrimSpace(link)
 	newLink := strings.TrimPrefix(link, "https://github.com/")
+	newLink = strings.TrimPrefix(newLink, "https://www.github.com/")
 
 	if newLink == link {
 		return "", "", ErrPrefixNotValid
 	}
 
-	fmt.Println(newLink)
-
+	newLink = strings.TrimSuffix(newLink, ".git")
 	content := strings.Split(newLink, "/")
 
 	if len(content) < 2 {
 		return "", "", ErrFailedToSplitTheLink
 	}
 
-	user, repoName := content[0], content[1]
+	owner, repoName = content[0], content[1]
 
-	return user, repoName, nil
+	if owner == "" || repoName == "" {
+		return "", "", ErrFailedToSplitTheLink
+	}
+
+	return owner, repoName, nil
 }
 
 func IsGitHubRepo(url string) bool {

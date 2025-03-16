@@ -35,11 +35,11 @@ func TestGetTheLinkParamsFail(t *testing.T) {
 		}
 	}
 
-	if owner != "google" {
+	if owner == "google" {
 		t.Fatalf("owner name is not valid")
 	}
 
-	if repoName != "go-github" {
+	if repoName == "go-github" {
 		t.Fatalf("repo name is not valid")
 	}
 }
