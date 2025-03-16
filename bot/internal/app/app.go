@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -12,13 +14,13 @@ import (
 	"tbank/bot/config"
 	bothandlers "tbank/bot/internal/bot_handlers"
 	botusecase "tbank/bot/internal/bot_usecase"
-	"tbank/bot/internal/closer"
-	grpcserver "tbank/bot/internal/grpcserver"
+	grpcserver "tbank/bot/internal/controllers/grpc"
 	kafkaconsumer "tbank/bot/internal/kafka_consumer"
 	telegramproducer "tbank/bot/internal/telegram_producer"
-	"tbank/bot/internal/usecase"
 	"time"
+
 	"github.com/IBM/sarama"
+	"github.com/lmittmann/tint"
 	"google.golang.org/grpc"
 	"gopkg.in/telebot.v3"
 )
@@ -30,32 +32,39 @@ type App struct {
 	bot				*telebot.Bot
 	tgProducer 		*telegramproducer.TelegramProducer
 	kafkaConsumer 	*kafkaconsumer.KafkaConsumer
-	closer			*closer.Closer
+	closer			*Closer
+	logger			*slog.Logger
 }
 
 
 func NewApp() (*App, error) {
 
+	logger := slog.New(tint.NewHandler(os.Stdout, nil)).With(slog.String("SERVICE", "BOT"))
+
 	config, err := config.LoadConfig()
 	if err != nil {
+		logger.Error("Failed to load the config", slog.String("error", err.Error()))
 		return nil, err
 	}
 
-	logger := slog.Default()
+	logger.Info("Successfully loaded the config")
 
-	closer := closer.NewCloser(logger)
+	closer := NewCloser()
 
 	grpcServer := grpc.NewServer()
 
-	closer.Add(func() error {
+	closer.Add(func(ctx context.Context) error {
 		grpcServer.Stop()
 		return nil
 	})
 
 	botUseCase, err := botusecase.NewUseCaseImpl(config, nil, logger)
 	if err != nil {
+		logger.Error("Failed to establish the connection to gRPC Scrapper Server", slog.String("error", err.Error()))
 		return nil, err
 	}
+
+	logger.Info("Successfully connected to gRPC Scrapper Server")
 
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token: config.Telegram.Token,
@@ -68,10 +77,11 @@ func NewApp() (*App, error) {
 		},
 	})
 	if err != nil {
+		logger.Error("Failed to initialize the bot", slog.String("error", err.Error()))
 		return nil, err	
 	}
 
-	closer.Add(func() error {
+	closer.Add(func(ctx context.Context) error {
 		bot.Stop()
 		return nil
 	})
@@ -82,6 +92,7 @@ func NewApp() (*App, error) {
 
 	consumer, err := sarama.NewConsumer(config.Kafka.Addresses, saramaConfig)
 	if err != nil {
+		logger.Error("Failed to create a new Sarama consumer", slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -89,19 +100,19 @@ func NewApp() (*App, error) {
 
 	telegramProducer := telegramproducer.NewTelegramProducer(bot, logger, commitCh)
 
-	closer.Add(func() error {
+	closer.Add(func(ctx context.Context) error {
 		telegramProducer.Stop()
 		return nil
 	})
 
-	kafkaConsumer := kafkaconsumer.NewKafkaConsumer(consumer, config.Kafka.Topic, commitCh)
+	kafkaConsumer := kafkaconsumer.NewKafkaConsumer(consumer, config.Kafka.Topic, commitCh, logger)
 
-	closer.Add(func() error {
+	logger.Info("Successfully created a Kafka consumer")
+
+	closer.Add(func(ctx context.Context) error {
 		kafkaConsumer.Stop()
 		return nil
 	})
-
-	useCase := usecase.NewUseCaseImp(bot)
 
 	var users sync.Map
 
@@ -112,7 +123,7 @@ func NewApp() (*App, error) {
 	bot.Handle("/list", bothandlers.ListHandler(botUseCase, &users))
 	bot.Handle(telebot.OnText, bothandlers.MessageHandler(botUseCase, &users))
 
-	grpcBotServer := grpcserver.NewBotServer(useCase, bot)
+	grpcBotServer := grpcserver.NewBotServer(bot)
 
 	gen.RegisterBotServer(grpcServer, grpcBotServer)
 
@@ -123,13 +134,16 @@ func NewApp() (*App, error) {
 		tgProducer: telegramProducer,
 		kafkaConsumer: kafkaConsumer,
 		closer: closer,
+		logger: logger,
 	}, nil
 }
 
 
 func (a *App) Run() error {
+	
+	a.logger.Info("Starting the bot...")
 
-	listener, err := net.Listen("tcp", ":" + a.config.TelegramBotServer.Port)
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", a.config.TelegramBotServer.Host, a.config.TelegramBotServer.Port))
 	if err != nil {
 		return err
 	}
@@ -137,14 +151,14 @@ func (a *App) Run() error {
 	errorCh := make(chan error, 1)
 
 	go func() {
-		slog.Info("Starting gRPC server on port " + a.config.TelegramBotServer.Port)
+		a.logger.Info("Starting gRPC server on port " + a.config.TelegramBotServer.Port)
 		if err := a.grpcServer.Serve(listener); err != nil {
 			errorCh <- err
 		}
 	}()
 
 	go func() {
-		slog.Info("Starting Telegram bot...")
+		a.logger.Info("Starting Telegram bot...")
 		a.bot.Start()
 	}()
 
@@ -160,12 +174,12 @@ func (a *App) Run() error {
 	case err := <- errorCh:
 		if errors.Is(err, grpc.ErrServerStopped) {
 			slog.Error("grpc server stopped", slog.String("err", err.Error()))
-			return a.closer.Close()
+			return a.closer.Close(context.Background())
 		}
 		slog.Error("failed to start the grpc-server")
-		return a.closer.Close()
+		return a.closer.Close(context.Background())
 	case <- quit:
 		slog.Info("Shutting down")
-		return a.closer.Close()
+		return a.closer.Close(context.Background())
 	}
 }
