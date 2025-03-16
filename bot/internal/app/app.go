@@ -13,7 +13,7 @@ import (
 	"tbank/bot/api/proto/gen"
 	"tbank/bot/config"
 	bothandlers "tbank/bot/internal/bot_handlers"
-	botusecase "tbank/bot/internal/bot_usecase"
+	"tbank/bot/internal/service"
 	grpcserver "tbank/bot/internal/controllers/grpc"
 	kafkaconsumer "tbank/bot/internal/kafka_consumer"
 	telegramproducer "tbank/bot/internal/telegram_producer"
@@ -58,7 +58,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	botUseCase, err := botusecase.NewUseCaseImpl(config, logger)
+	botUseCase, err := service.NewUseCaseImpl(config, logger)
 	if err != nil {
 		logger.Error("Failed to establish the connection to gRPC Scrapper Server", slog.String("error", err.Error()))
 		return nil, err
