@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"path/filepath"
+	"runtime"
 	"tbank/scrapper/config"
 	mockhub "tbank/scrapper/internal/hub/mock"
 	"tbank/scrapper/internal/models"
@@ -28,8 +30,10 @@ func Test(t *testing.T) {
 
 	logger := slog.Default()
 
-	cfg, err := config.LoadConfig(".env")
-	require.NoError(t, err)
+	_, currentFile, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(currentFile)
+
+	cfg, err := config.LoadConfig(filepath.Join(testDir, ".env"))
 
 	ctx := context.Background()
 
