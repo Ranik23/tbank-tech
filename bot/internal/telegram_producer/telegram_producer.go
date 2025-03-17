@@ -43,7 +43,7 @@ func (tp *TelegramProducer) Run() {
 				commit, err := utils.ConvertFromBytesToCustomCommit(message.Value)
 				if err != nil {
 					tp.logger.Error(op, slog.String("error", err.Error()))
-					tp.Stop()
+					return
 				}
 
 				userID := commit.UserID
