@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS link_users (
     CONSTRAINT fk_link FOREIGN KEY (link_id) REFERENCES links(id) ON DELETE CASCADE,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS link_users;

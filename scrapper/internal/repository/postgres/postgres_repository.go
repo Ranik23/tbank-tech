@@ -28,7 +28,7 @@ func (s *postgresRepository) GetLinkByURL(ctx context.Context, url string) (*dbm
 
 	executor := s.txManager.GetExecutor(ctx)
 	var link dbmodels.Link
-	query := `SELECT id, name FROM links WHERE name = $1`
+	query := `SELECT id, url FROM links WHERE url = $1`
 
 	if err := executor.QueryRow(ctx, query, url).Scan(&link); err != nil {
 		s.logger.Error("GetLinkByURL failed", slog.String("error", err.Error()))

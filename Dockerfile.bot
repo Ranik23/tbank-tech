@@ -2,6 +2,8 @@ FROM golang:1.24.1-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache git
+
 COPY go.mod go.sum ./
 RUN go mod download
 
@@ -16,10 +18,10 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates curl
 
 COPY --from=builder /app/bot_bin ./
-
 COPY kafka_healthcheck.sh ./
 
 RUN chmod +x kafka_healthcheck.sh
 
 COPY .env ./
 
+ENTRYPOINT ["sh", "-c", "./kafka_healthcheck.sh kafka 9092 && ./bot_bin"]

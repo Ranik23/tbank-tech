@@ -2,8 +2,12 @@ FROM golang:1.24.1-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache git
+
 COPY go.mod go.sum ./
 RUN go mod download
+
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 COPY . .
 
@@ -15,10 +19,17 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates curl
 
-COPY --from=builder /app/scrapper_bin  ./
+COPY --from=builder /app/scrapper_bin ./
+COPY --from=builder /app/scrapper/internal/migrations ./migrations
+COPY --from=builder /go/bin/goose /usr/local/bin/goose
 
-COPY kafka_healthcheck.sh ./
+RUN chmod +x /usr/local/bin/goose
 
-RUN chmod +x kafka_healthcheck.sh
-
+COPY kafka_healthcheck.sh entrypoint.sh ./
 COPY .env ./
+
+RUN chmod +x kafka_healthcheck.sh entrypoint.sh
+
+#ENTRYPOINT ["sh", "-c", "sleep infinity"]
+
+ENTRYPOINT ["sh", "-c", "./entrypoint.sh migrations && ./kafka_healthcheck.sh kafka 9092 && ./scrapper_bin"]

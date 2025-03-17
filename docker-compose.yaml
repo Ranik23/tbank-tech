@@ -22,7 +22,6 @@ services:
       - DATABASE_SSL=disable
       - SCRAPPER_SERVICE_HOST=scrapper
       - SCRAPPER_SERVICE_PORT=8082
-    entrypoint: ["sh", "-c", "./kafka_healthcheck.sh kafka 9092 && ./bot_bin"]
 
   scrapper:
     build:
@@ -45,7 +44,6 @@ services:
       - DATABASE_SSL=disable
       - SCRAPPER_SERVICE_HOST=0.0.0.0
       - SCRAPPER_SERVICE_PORT=8082
-    entrypoint: ["sh", "-c", "./kafka_healthcheck.sh kafka 9092 && ./scrapper_bin"]
 
 
   zookeeper:
