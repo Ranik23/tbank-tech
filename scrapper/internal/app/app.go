@@ -37,7 +37,7 @@ func NewApp() (*App, error) {
 
 	logger := slog.New(tint.NewHandler(os.Stdout, nil)).With(slog.String("SERVICE", "SCRAPPER"))
 
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfig(".env")
 	if err != nil {
 		logger.Error("Failed to laod the config", slog.String("error", err.Error()))
 		return nil, err

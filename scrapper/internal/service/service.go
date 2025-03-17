@@ -76,6 +76,10 @@ func (s *service) AddLink(ctx context.Context, link dbmodels.Link, userID uint) 
 			return err
 		}
 
+		if err := s.repo.CreateUser(txCtx, userID, "random"); err != nil {
+			return err
+		}
+
 		var err error
 		linkNew, err = s.repo.GetLinkByURL(txCtx, link.Url)
 		if err != nil {

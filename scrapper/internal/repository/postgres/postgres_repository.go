@@ -28,16 +28,20 @@ func (s *postgresRepository) GetLinkByURL(ctx context.Context, url string) (*dbm
 
 	executor := s.txManager.GetExecutor(ctx)
 	var link dbmodels.Link
+	var id uint
 	query := `SELECT id, url FROM links WHERE url = $1`
 
-	if err := executor.QueryRow(ctx, query, url).Scan(&link); err != nil {
+	if err := executor.QueryRow(ctx, query, url).Scan(&id, &link.Url); err != nil {
 		s.logger.Error("GetLinkByURL failed", slog.String("error", err.Error()))
 		return nil, err
 	}
 
+	link.ID = id
+
 	s.logger.Info("GetLinkByURL success", slog.Any("link", link))
 	return &link, nil
 }
+
 
 func (s *postgresRepository) GetURLS(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	s.logger.Info("GetURLS called", slog.Uint64("userID", uint64(userID)))

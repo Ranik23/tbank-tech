@@ -16,11 +16,11 @@ type Config struct {
 	Kafka				KafkaConfig
 }
 
-func LoadConfig() (*Config, error) {
+func LoadConfig(envPath string) (*Config, error) {
 
 	viper.AutomaticEnv()
 	
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile(envPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
