@@ -7,8 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/Ranik23/tbank-tech/scrapper/config"
@@ -30,10 +28,7 @@ func TestRegisterUser(t *testing.T) {
 
 	logger := slog.Default()
 
-	_, currentFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(currentFile)
-
-	cfg, err := config.LoadConfig(filepath.Join(testDir, ".env"))
+	cfg, err := config.LoadConfig(".env")
 	require.NoError(t, err)
 
 	ctx := context.Background()

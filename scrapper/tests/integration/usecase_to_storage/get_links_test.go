@@ -7,8 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/Ranik23/tbank-tech/scrapper/config"
@@ -29,10 +27,7 @@ func TestGetLinks(t *testing.T) {
 	// Настройка логгера
 	logger := slog.Default()
 
-	// Загрузка конфигурации
-	_, currentFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(currentFile)
-	cfg, err := config.LoadConfig(filepath.Join(testDir, ".env"))
+	cfg, err := config.LoadConfig(".env")
 	require.NoError(t, err)
 
 	// Настройка контейнера с PostgreSQL
