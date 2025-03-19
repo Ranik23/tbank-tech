@@ -3,22 +3,21 @@ package telegramproducer
 import (
 	"log/slog"
 	"sync"
-	telegrambot "tbank/bot/internal/telegram_bot/mock"
 	"testing"
 	"time"
 
+	botmock "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot/mock"
+
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
-
 )
-
 
 func TestTelegramProducer_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	messageCh := make(chan sarama.ConsumerMessage, 1)
-	mockBot := telegrambot.NewMockTelegramBot(ctrl)
+	mockBot := botmock.NewMockTelegramBot(ctrl)
 
 	mockBot.EXPECT().Send(gomock.Any(), gomock.Any()).Times(0)
 
@@ -40,4 +39,3 @@ func TestTelegramProducer_InvalidJSON(t *testing.T) {
 	producerTelegram.Stop()
 	wg.Wait()
 }
-

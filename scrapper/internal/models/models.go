@@ -15,4 +15,5 @@ type Link struct {
 type User struct {
 	UserID	uint
 	Name	string
+	Token 	string
 }

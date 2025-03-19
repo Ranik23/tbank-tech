@@ -27,9 +27,9 @@ RUN chmod +x /usr/local/bin/goose
 
 COPY kafka_healthcheck.sh entrypoint.sh ./
 COPY .env ./
+COPY postgres_healthcheck.sh ./
 
-RUN chmod +x kafka_healthcheck.sh entrypoint.sh
+RUN chmod +x kafka_healthcheck.sh entrypoint.sh postgres_healthcheck.sh
 
-#ENTRYPOINT ["sh", "-c", "sleep infinity"]
 
-ENTRYPOINT ["sh", "-c", "./entrypoint.sh migrations && ./kafka_healthcheck.sh kafka 9092 && ./scrapper_bin"]
+ENTRYPOINT ["sh", "-c", "./postgres_healthcheck.sh postgres 5432 && ./entrypoint.sh migrations && ./kafka_healthcheck.sh kafka 9092 && ./scrapper_bin"]

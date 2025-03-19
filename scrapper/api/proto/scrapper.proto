@@ -44,6 +44,7 @@ service Scrapper {
 message RegisterUserRequest {
   int64 tg_user_id = 1;
   string name = 2; // Имя пользователя
+  string token = 3;
 }
 
 // Ответ на регистрацию пользователя

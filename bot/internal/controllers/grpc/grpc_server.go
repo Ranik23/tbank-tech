@@ -2,27 +2,26 @@ package grpc
 
 import (
 	"context"
-	//"tbank/bot/internal/usecase"
-	"tbank/bot/api/proto/gen"
+	"github.com/Ranik23/tbank-tech/bot/internal/service"
+	genBot"github.com/Ranik23/tbank-tech/bot/api/proto/gen"
 	"gopkg.in/telebot.v3"
 )
 
-
-type BotServer struct {
-	gen.UnimplementedBotServer
-	//usecase 	usecase.UseCase
+type BotGRPCServer struct {
+	genBot.UnimplementedBotServer
+	botService  service.Service
 	telegramBot *telebot.Bot
 }
 
-func NewBotServer(bot *telebot.Bot) *BotServer {
-	return &BotServer{
-		// usecase: usecase,
+func NewBotGRPCServer(bot *telebot.Bot, botService service.Service) *BotGRPCServer {
+	return &BotGRPCServer{
+		botService:  botService,
 		telegramBot: bot,
 	}
 }
 
-func (bs *BotServer) SendUpdate(ctx context.Context, message *gen.CommitUpdate) (*gen.CommitUpdateAnswer, error) {
-	return &gen.CommitUpdateAnswer{
-		Status: "Succesfully",
+func (bs *BotGRPCServer) SendUpdate(ctx context.Context, message *genBot.CommitUpdate) (*genBot.CommitUpdateAnswer, error) {
+	return &genBot.CommitUpdateAnswer{
+		Status: "Successfully",
 	}, nil
 }

@@ -23,13 +23,15 @@ func NewKafkaConsumer(kafkaConsumer sarama.Consumer, topicToRead string, commitC
 	}
 }
 
-func (kc *KafkaConsumer) Run() {
+func (kc *KafkaConsumer) Run() error {
 	const op = "KafkaConsumer.Run"
+
+	kc.logger.Info(op, slog.String("message", "Kafka Consumer Running"))
 
 	partitions, err := kc.consumer.Partitions(kc.topic)
 	if err != nil {
 		kc.logger.Error(op, slog.String("message", err.Error()))	
-		return
+		return err
 	}
 
 	for _, partition := range partitions {
@@ -63,6 +65,7 @@ func (kc *KafkaConsumer) Run() {
 			}
 		}()
 	}
+	return nil
 }
 
 func (kc *KafkaConsumer) Stop() {

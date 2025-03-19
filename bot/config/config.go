@@ -44,6 +44,10 @@ func LoadConfig() (*Config, error) {
 			Addresses: strings.Split(viper.GetString("KAFKA_ADDRESSES"), " "),
 			Topic: viper.GetString("KAFKA_TOPIC"),
 		},
+		TelegramBotServer: TelegramBotServerConfig{
+			Host: viper.GetString("TELERGAM_BOT_HOST"),
+			Port: viper.GetString("TELERGAM_BOT_PORT"),
+		},
 	}, nil
 
 

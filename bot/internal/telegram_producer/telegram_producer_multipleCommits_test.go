@@ -1,15 +1,14 @@
-//go:build unit
-
 package telegramproducer
 
 import (
 	"encoding/json"
 	"log/slog"
 	"sync"
-	telegrambot "tbank/bot/internal/telegram_bot/mock"
-	"tbank/bot/internal/models"
 	"testing"
 	"time"
+
+	"github.com/Ranik23/tbank-tech/bot/internal/models"
+	telegrambot "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot/mock"
 
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
@@ -17,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/telebot.v3"
 )
-
 
 func TestTelegramProducer_MultipleMessages(t *testing.T) {
 	exampleCommit1 := models.CustomCommit{
@@ -47,9 +45,8 @@ func TestTelegramProducer_MultipleMessages(t *testing.T) {
 
 	mockBot := telegrambot.NewMockTelegramBot(ctrl)
 
-	// Ожидаем два вызова Send с разными пользователями и коммитами
-	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Eq(exampleCommit1.Commit)).Times(1).Return(nil, nil)
-	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 2}), gomock.Eq(exampleCommit2.Commit)).Times(1).Return(nil, nil)
+	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 2}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 
 	producerTelegram := NewTelegramProducer(mockBot, slog.Default(), messageCh)
 
@@ -60,7 +57,6 @@ func TestTelegramProducer_MultipleMessages(t *testing.T) {
 		defer wg.Done()
 		producerTelegram.Run()
 	}()
-
 
 	jsonCommit1, err := json.Marshal(exampleCommit1)
 	require.NoError(t, err)

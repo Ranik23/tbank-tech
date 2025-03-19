@@ -7,7 +7,7 @@ package mock
 import (
 	context "context"
 	reflect "reflect"
-	repository "tbank/scrapper/internal/repository"
+	repository "github.com/Ranik23/tbank-tech/scrapper/internal/repository"
 
 	gomock "github.com/golang/mock/gomock"
 	pgx "github.com/jackc/pgx/v5"

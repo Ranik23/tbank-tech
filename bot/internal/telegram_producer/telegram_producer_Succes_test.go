@@ -1,15 +1,14 @@
-//go:build unit
-
 package telegramproducer
 
 import (
 	"encoding/json"
 	"log/slog"
 	"sync"
-	telegrambot "tbank/bot/internal/telegram_bot/mock"
-	"tbank/bot/internal/models"
 	"testing"
 	"time"
+
+	"github.com/Ranik23/tbank-tech/bot/internal/models"
+	mockbot "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot/mock"
 
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
@@ -33,9 +32,9 @@ func TestTelegramProducer_Success(t *testing.T) {
 	messageCh := make(chan sarama.ConsumerMessage)
 
 	ctrl := gomock.NewController(t)
-	mockBot := telegrambot.NewMockTelegramBot(ctrl)
+	mockBot := mockbot.NewMockTelegramBot(ctrl)
 
-	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Eq(exampleCommit.Commit)).Times(1).Return(nil, nil)
+	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 
 	producerTelegram := NewTelegramProducer(mockBot, slog.Default(), messageCh)
 
@@ -49,7 +48,7 @@ func TestTelegramProducer_Success(t *testing.T) {
 
 	jsonExampleCommit, err := json.Marshal(exampleCommit)
 	require.NoError(t, err)
-	
+
 	select {
 	case messageCh <- sarama.ConsumerMessage{Value: jsonExampleCommit}:
 	case <-time.After(5 * time.Second):
@@ -60,6 +59,3 @@ func TestTelegramProducer_Success(t *testing.T) {
 	producerTelegram.Stop()
 	wg.Wait()
 }
-
-
-

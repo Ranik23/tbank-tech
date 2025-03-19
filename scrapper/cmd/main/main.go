@@ -1,10 +1,8 @@
 package main
 
 import (
-	"tbank/scrapper/internal/app"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/app"
 )
-
-
 
 func main() {
 

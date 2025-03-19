@@ -8,29 +8,29 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"tbank/scrapper/api/proto/gen"
-	"tbank/scrapper/config"
-	grpcserver "tbank/scrapper/internal/controllers/grpc"
-	"tbank/scrapper/internal/gateway"
-	"tbank/scrapper/internal/hub"
-	kafkaproducer "tbank/scrapper/internal/kafka_producer"
-	"tbank/scrapper/internal/repository/postgres"
-	"tbank/scrapper/internal/service"
-	git "tbank/scrapper/pkg/github_client"
+
+	"github.com/Ranik23/tbank-tech/scrapper/api/proto/gen"
+	"github.com/Ranik23/tbank-tech/scrapper/config"
+	grpcserver "github.com/Ranik23/tbank-tech/scrapper/internal/controllers/grpc"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/gateway"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/hub"
+	kafkaproducer "github.com/Ranik23/tbank-tech/scrapper/internal/kafka_producer"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
+	git "github.com/Ranik23/tbank-tech/scrapper/pkg/github_client"
 
 	"github.com/IBM/sarama"
 	"github.com/lmittmann/tint"
 	"google.golang.org/grpc"
 )
 
-
 type App struct {
-	grpcServer 		*grpc.Server
-	config     		*config.Config
-	logger     		*slog.Logger
-	kafkaProducer 	*kafkaproducer.KafkaProducer
-	hub				hub.Hub
-	closer			*Closer
+	grpcServer    *grpc.Server
+	config        *config.Config
+	logger        *slog.Logger
+	kafkaProducer *kafkaproducer.KafkaProducer
+	hub           hub.Hub
+	closer        *Closer
 }
 
 func NewApp() (*App, error) {
@@ -69,7 +69,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	gitHubClient := git.NewRealGitHubClient()
+	gitHubClient := git.NewRealGitHubClient(logger)
 
 	commitCh := make(chan hub.CustomCommit)
 
@@ -77,12 +77,12 @@ func NewApp() (*App, error) {
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true
 
-	producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, saramaConfig) 
+	producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, saramaConfig)
 	if err != nil {
 		logger.Error("Failed to create a new async Kafka producer", slog.String("error", err.Error()))
 		return nil, err
 	}
-	
+
 	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh, cfg.Kafka.Topic)
 	if err != nil {
 		logger.Error("Failed to create a new Kafka producer", slog.String("error", err.Error()))
@@ -109,23 +109,23 @@ func NewApp() (*App, error) {
 
 	postgresRepo := postgres.NewPostgresRepository(txManager, logger)
 
-	usecase , err := service.NewService(postgresRepo, txManager, hub, logger)
+	usecase, err := service.NewService(postgresRepo, txManager, hub, logger)
 	if err != nil {
 		logger.Error("Failed to create a new service", slog.String("error", err.Error()))
 		return nil, err
 	}
 
 	grpcScrapperServer := grpcserver.NewScrapperServer(usecase)
-	
+
 	gen.RegisterScrapperServer(grpcServer, grpcScrapperServer)
 
 	return &App{
-		grpcServer: 	grpcServer,
-		config:     	cfg,
-		logger:     	logger,
-		kafkaProducer:	kafkaProducer,
-		hub: 			hub,
-		closer: 		closer,
+		grpcServer:    grpcServer,
+		config:        cfg,
+		logger:        logger,
+		kafkaProducer: kafkaProducer,
+		hub:           hub,
+		closer:        closer,
 	}, nil
 }
 
@@ -141,7 +141,7 @@ func (a *App) Run() error {
 
 	a.logger.Info("Запуск gRPC сервера", "grpcAddr", grpcAddr)
 
-	errorCh := make(chan error, 2) 
+	errorCh := make(chan error, 2)
 
 	a.hub.Run()
 

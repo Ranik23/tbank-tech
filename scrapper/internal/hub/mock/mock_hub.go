@@ -6,6 +6,7 @@ package mock
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -34,17 +35,17 @@ func (m *MockHub) EXPECT() *MockHubMockRecorder {
 }
 
 // AddLink mocks base method.
-func (m *MockHub) AddLink(link string, userID uint) error {
+func (m *MockHub) AddLink(link string, userID uint, token string, interval time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddLink", link, userID)
+	ret := m.ctrl.Call(m, "AddLink", link, userID, token, interval)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddLink indicates an expected call of AddLink.
-func (mr *MockHubMockRecorder) AddLink(link, userID interface{}) *gomock.Call {
+func (mr *MockHubMockRecorder) AddLink(link, userID, token, interval interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLink", reflect.TypeOf((*MockHub)(nil).AddLink), link, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddLink", reflect.TypeOf((*MockHub)(nil).AddLink), link, userID, token, interval)
 }
 
 // RemoveLink mocks base method.

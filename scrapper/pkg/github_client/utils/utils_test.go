@@ -1,11 +1,20 @@
-//go:build unit
-
 package utils
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
+
+func TestEmptyLink(t *testing.T) {
+
+	url := ""
+
+	_, _, err := GetLinkParams(url)
+
+	require.Error(t, err)
+}
 
 func TestGetTheLinkParamsSucces(t *testing.T) {
 	url := "https://github.com/google/go-github"
@@ -23,7 +32,6 @@ func TestGetTheLinkParamsSucces(t *testing.T) {
 		t.Fatalf("wrong repo name")
 	}
 }
-
 
 func TestGetTheLinkParamsFail(t *testing.T) {
 	url := "https://github/google/go-github"
@@ -65,7 +73,7 @@ func TestIsGitHubRepoFail(t *testing.T) {
 		"https://github.com/MAtveyka12/",
 		"https://github.com/OpenAPIToo",
 		"https:/pchamp001/avito-tech-merch",
-		"https://github.com/MAtveyka12/tbank/tree/test/.github/workflows",
+		"https://github.com/MAtveyka12/github.com/Ranik23/tbank-tech/tree/test/.github/workflows",
 	}
 
 	for _, testURL := range testURLS {
@@ -74,4 +82,3 @@ func TestIsGitHubRepoFail(t *testing.T) {
 		}
 	}
 }
-

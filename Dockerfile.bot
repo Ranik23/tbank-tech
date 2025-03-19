@@ -19,6 +19,7 @@ RUN apk add --no-cache ca-certificates curl
 
 COPY --from=builder /app/bot_bin ./
 COPY kafka_healthcheck.sh ./
+COPY postgres_healthcheck.sh ./
 
 RUN chmod +x kafka_healthcheck.sh
 

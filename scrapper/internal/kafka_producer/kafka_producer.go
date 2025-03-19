@@ -4,30 +4,31 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strconv"
-	"tbank/scrapper/internal/hub"
+
+	"github.com/Ranik23/tbank-tech/scrapper/internal/hub"
 
 	"github.com/IBM/sarama"
 )
 
 type KafkaProducer struct {
-	logger   		*slog.Logger
-	producer 		sarama.AsyncProducer
-	commitCh 		chan hub.CustomCommit
-	topicToSend		string
-	stopCh   		chan struct{}
+	logger      *slog.Logger
+	producer    sarama.AsyncProducer
+	commitCh    chan hub.CustomCommit
+	topicToSend string
+	stopCh      chan struct{}
 }
 
 func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commitCh chan hub.CustomCommit, topic string) (*KafkaProducer, error) {
 	return &KafkaProducer{
-		logger:   logger,
-		producer: producer,
-		commitCh: commitCh,
-		stopCh:   make(chan struct{}),
+		logger:      logger,
+		producer:    producer,
+		commitCh:    commitCh,
+		stopCh:      make(chan struct{}),
 		topicToSend: topic,
 	}, nil
 }
 
-//NON-BLOCKING
+// NON-BLOCKING
 func (kp *KafkaProducer) Run() {
 	const op = "KafkaProducer.Run"
 	kp.logger.Info(op, slog.String("msg", "Kafka producer is running"))

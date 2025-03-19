@@ -1,7 +1,7 @@
 package main
 
 import (
-	"tbank/bot/internal/app"
+	"github.com/Ranik23/tbank-tech/bot/internal/app"
 )
 
 func main() {

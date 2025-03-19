@@ -2,9 +2,9 @@ package grpc
 
 import (
 	"context"
-	"tbank/scrapper/api/proto/gen"
-	"tbank/scrapper/internal/models"
-	"tbank/scrapper/internal/service"
+
+	"github.com/Ranik23/tbank-tech/scrapper/api/proto/gen"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
 )
 
 type ScrapperServer struct {
@@ -19,7 +19,7 @@ func NewScrapperServer(usecase service.Service) *ScrapperServer {
 }
 
 func (s *ScrapperServer) RegisterUser(ctx context.Context, req *gen.RegisterUserRequest) (*gen.RegisterUserResponse, error) {
-	if err := s.usecase.RegisterUser(ctx, uint(req.GetTgUserId()), req.GetName()); err != nil {
+	if err := s.usecase.RegisterUser(ctx, uint(req.GetTgUserId()), req.GetName(), req.GetToken()); err != nil {
 		return nil, err
 	}
 	return &gen.RegisterUserResponse{
@@ -48,45 +48,33 @@ func (s *ScrapperServer) GetLinks(ctx context.Context, req *gen.GetLinksRequest)
 	for _, link := range links {
 		linksResponse = append(linksResponse, &gen.LinkResponse{
 			Url: link.Url,
-			Id: int64(link.ID),
+			Id:  int64(link.ID),
 		})
 	}
 
 	return &gen.ListLinksResponse{
 		Links: linksResponse,
-		Size: int32(len(linksResponse)),
+		Size:  int32(len(linksResponse)),
 	}, nil
 }
 
 func (s *ScrapperServer) AddLink(ctx context.Context, req *gen.AddLinkRequest) (*gen.LinkResponse, error) {
-
-	link := models.Link{
-		Url: req.GetUrl(),
-	}
-
-	newLink, err := s.usecase.AddLink(ctx, link, uint(req.GetTgUserId()))
-	if err != nil {
+	if err := s.usecase.AddLink(ctx, req.GetUrl(), uint(req.GetTgUserId())); err != nil {
 		return nil, err
 	}
-
 	return &gen.LinkResponse{
-		Id: int64(newLink.ID),
-		Url: newLink.Url,
+		Id:  1,
+		Url: req.GetUrl(),
 	}, nil
 }
 
 func (s *ScrapperServer) RemoveLink(ctx context.Context, req *gen.RemoveLinkRequest) (*gen.LinkResponse, error) {
-	
-	link := models.Link{
-		Url: req.GetUrl(),
-	}
-
-	if err := s.usecase.RemoveLink(ctx, link, uint(req.GetTgUserId())); err != nil {
+	if err := s.usecase.RemoveLink(ctx, req.GetUrl(), uint(req.GetTgUserId())); err != nil {
 		return nil, err
 	}
 
 	return &gen.LinkResponse{
-		Id: int64(link.ID),
-		Url: link.Url,
+		Id:  1,
+		Url: req.GetUrl(),
 	}, nil
 }

@@ -1,6 +1,6 @@
 //go:build integration
 
-package usecasestorage
+package usecasetostorage
 
 import (
 	"context"
@@ -9,12 +9,12 @@ import (
 	"log/slog"
 	"path/filepath"
 	"runtime"
-	"tbank/scrapper/config"
-	mockhub "tbank/scrapper/internal/hub/mock"
-	"tbank/scrapper/internal/models"
-	"tbank/scrapper/internal/repository/postgres"
-	"tbank/scrapper/internal/service"
 	"testing"
+
+	"github.com/Ranik23/tbank-tech/scrapper/config"
+	mockhub "github.com/Ranik23/tbank-tech/scrapper/internal/hub/mock"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/golang/mock/gomock"
@@ -34,6 +34,7 @@ func Test(t *testing.T) {
 	testDir := filepath.Dir(currentFile)
 
 	cfg, err := config.LoadConfig(filepath.Join(testDir, ".env"))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -64,7 +65,6 @@ func Test(t *testing.T) {
 	hostPort, err := postgresC.MappedPort(ctx, nat.Port(exposedPort))
 	require.NoError(t, err)
 
-
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.DataBase.Host, hostPort.Port(), cfg.DataBase.Username, cfg.DataBase.Password, cfg.DataBase.DBName, cfg.DataBase.SSL)
 
@@ -73,10 +73,13 @@ func Test(t *testing.T) {
 
 	sqlDB, err := sql.Open("postgres", dsn)
 	require.NoError(t, err)
+	defer func() {
+		err = sqlDB.Close()
+		require.NoError(t, err)
+	}()
 
 	err = goose.Up(sqlDB, "../../../internal/migrations")
 	require.NoError(t, err)
-
 
 	txManager := postgres.NewTxManager(pool, logger)
 
@@ -86,29 +89,30 @@ func Test(t *testing.T) {
 
 	mockHub := mockhub.NewMockHub(ctrl)
 
-	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	serv, err := service.NewService(repository, txManager, mockHub, logger)
 	require.NoError(t, err)
 
-	exampleLink := models.Link{
-		ID:  1,
-		Url: "https://github.com/epchamp001/avito-tech-merch",
-	}
+	exampleLink := "https://github.com/epchamp001/avito-tech-merch"
 
-	_, err = serv.AddLink(context.Background(), exampleLink, 1)
+	err = serv.RegisterUser(context.Background(), 1, "anton", "test")
 	require.NoError(t, err)
 
-	var userID int
-	var name string
+	err = serv.AddLink(context.Background(), exampleLink, 1)
+	require.NoError(t, err)
+
+	var (
+		userID int
+		name   string
+		link   string
+	)
 
 	err = pool.QueryRow(ctx, `SELECT user_id, name FROM users WHERE user_id = $1`, 1).Scan(&userID, &name)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, userID)
-	require.Equal(t, "random", name)
-
-	var link string
+	require.Equal(t, "anton", name)
 
 	err = pool.QueryRow(ctx, `SELECT url FROM links WHERE url = $1`, "https://github.com/epchamp001/avito-tech-merch").Scan(&link)
 	require.NoError(t, err)

@@ -2,11 +2,9 @@ package utils
 
 import (
 	"encoding/json"
-	"tbank/bot/internal/models"
+
+	"github.com/Ranik23/tbank-tech/bot/internal/models"
 )
-
-
-
 
 func ConvertFromBytesToCustomCommit(message []byte) (*models.CustomCommit, error) {
 	var msg models.CustomCommit

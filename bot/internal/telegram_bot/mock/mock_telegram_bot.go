@@ -35,9 +35,9 @@ func (m *MockTelegramBot) EXPECT() *MockTelegramBotMockRecorder {
 }
 
 // Send mocks base method.
-func (m *MockTelegramBot) Send(to telebot.Recipient, what interface{}, opts ...interface{}) (*telebot.Message, error) {
+func (m *MockTelegramBot) Send(recepient telebot.Recipient, what interface{}, opts ...interface{}) (*telebot.Message, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{to, what}
+	varargs := []interface{}{recepient, what}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -48,8 +48,8 @@ func (m *MockTelegramBot) Send(to telebot.Recipient, what interface{}, opts ...i
 }
 
 // Send indicates an expected call of Send.
-func (mr *MockTelegramBotMockRecorder) Send(to, what interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockTelegramBotMockRecorder) Send(recepient, what interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{to, what}, opts...)
+	varargs := append([]interface{}{recepient, what}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockTelegramBot)(nil).Send), varargs...)
 }

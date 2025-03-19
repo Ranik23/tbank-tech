@@ -4,7 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"tbank/scrapper/api/proto/gen"
+
+	"github.com/Ranik23/tbank-tech/scrapper/api/proto/gen"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"

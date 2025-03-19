@@ -1,33 +1,30 @@
 package postgres
+
 import (
 	"context"
 	"log/slog"
 
+	txmanager "github.com/Ranik23/tbank-tech/scrapper/internal/repository"
 	"github.com/jackc/pgx/v5"
-	txmanager"tbank/scrapper/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-
-
-
 type txPostgresManager struct {
-	pool 	*pgxpool.Pool
-	logger 	*slog.Logger
+	pool   *pgxpool.Pool
+	logger *slog.Logger
 }
 
-type txKey struct {}
-
+type txKey struct{}
 
 func NewTxManager(pool *pgxpool.Pool, logger *slog.Logger) txmanager.TxManager {
 	return &txPostgresManager{
-		pool: pool,
+		pool:   pool,
 		logger: logger,
 	}
 }
 
 func (t *txPostgresManager) GetExecutor(ctx context.Context) txmanager.Executor {
-	tx, ok := ctx.Value(txKey{}).(txmanager.Executor);
+	tx, ok := ctx.Value(txKey{}).(txmanager.Executor)
 	if ok {
 		return tx
 	}
@@ -50,7 +47,7 @@ func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Cont
 		}
 	}()
 
-	type txKey struct {}
+	type txKey struct{}
 
 	ctxWithTX := context.WithValue(ctx, txKey{}, tx)
 
@@ -58,7 +55,6 @@ func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Cont
 		t.logger.Error("Failed to run the chain", slog.String("error", err.Error()))
 		return err
 	}
-
 
 	err = tx.Commit(ctx)
 	if err != nil {

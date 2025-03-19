@@ -1,4 +1,4 @@
-package bothandlers
+package telegram
 
 
 const (
@@ -8,6 +8,7 @@ const (
 	StateWaitingForTagsLINK = 3
 	StateWaitingForLinkUNLINK = 4
 	StateWaitingForTheToken = 5
+	StateWaitingForTheName = 6
 )
 
 

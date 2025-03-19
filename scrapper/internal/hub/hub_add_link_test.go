@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
-	mockgithub "tbank/scrapper/pkg/github_client/mock"
+	mockgithub "github.com/Ranik23/tbank-tech/scrapper/pkg/github_client/mock"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-github/v69/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
 
 func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -28,7 +27,7 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 
 	url := "https://github.com/Ranik23/tbank-tech"
 
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
 		&github.RepositoryCommit{
 			SHA: github.Ptr("test_sha1"),
 			Commit: &github.Commit{
@@ -37,8 +36,7 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 		}, nil, nil,
 	).Times(1)
 
-
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
 		&github.RepositoryCommit{
 			SHA: github.Ptr("test_sha2"),
 			Commit: &github.Commit{
@@ -49,7 +47,7 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 
 	hub.Run()
 
-	err := hub.AddLink(url, 1); 
+	err := hub.AddLink(url, 1, "test_token", 4*time.Second)
 	require.NoError(t, err)
 
 	select {
@@ -81,7 +79,7 @@ func TestHub_AddLinks_SendsCommitsMultiple(t *testing.T) {
 
 	url := "https://github.com/Ranik23/tbank-tech"
 
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
 		&github.RepositoryCommit{
 			SHA: github.Ptr("test_sha"),
 			Commit: &github.Commit{
@@ -92,7 +90,7 @@ func TestHub_AddLinks_SendsCommitsMultiple(t *testing.T) {
 
 	url2 := "https://github.com/Ranik23/weather-api-swagger"
 
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "weather-api-swagger", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "weather-api-swagger", gomock.Any(), gomock.Any()).Return(
 		&github.RepositoryCommit{
 			SHA: github.Ptr("test_sha2"),
 			Commit: &github.Commit{
@@ -105,13 +103,13 @@ func TestHub_AddLinks_SendsCommitsMultiple(t *testing.T) {
 
 	hub.Run()
 
-	hub.AddLink(url, 1)
-	hub.AddLink(url2, 2)
+	hub.AddLink(url, 1, "test_token", 4*time.Second)
+	hub.AddLink(url2, 2, "test_token", 4*time.Second)
 
 	count := 0
 	expectedCount := 2
-	
-	outerLoop:
+
+outerLoop:
 	for {
 		select {
 		case repoCommit := <-commitChan:
@@ -124,7 +122,7 @@ func TestHub_AddLinks_SendsCommitsMultiple(t *testing.T) {
 			break outerLoop
 		}
 	}
-	
+
 	assert.Equal(t, count, expectedCount)
 
 	hub.Stop()
@@ -141,7 +139,7 @@ func TestHub_AddLink_SendsCommit(t *testing.T) {
 
 	url := "https://github.com/Ranik23/tbank-tech"
 
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
 		&github.RepositoryCommit{
 			SHA: github.Ptr("test_sha"),
 			Commit: &github.Commit{
@@ -154,8 +152,7 @@ func TestHub_AddLink_SendsCommit(t *testing.T) {
 
 	hub.Run()
 
-	hub.AddLink(url, 1)
-
+	hub.AddLink(url, 1, "test_token", 10*time.Second)
 
 	select {
 	case commit := <-commitChan:
@@ -180,13 +177,13 @@ func TestHub_AddLink_ErrorFetchingCommit(t *testing.T) {
 
 	url := "https://github.com/Ranik23/tbank-tech"
 
-	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any()).Return(
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
 		nil, nil, assert.AnError,
 	).AnyTimes()
 
 	hub.Run()
 
-	hub.AddLink(url, 1)
+	hub.AddLink(url, 1, "test_token", 10*time.Second)
 
 	time.Sleep(2 * time.Second)
 

@@ -2,11 +2,19 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
-	dbmodels "tbank/scrapper/internal/models"
-	"tbank/scrapper/internal/hub"
-	"tbank/scrapper/internal/repository"
+	"time"
+
+	"github.com/Ranik23/tbank-tech/scrapper/internal/hub"
+	dbmodels "github.com/Ranik23/tbank-tech/scrapper/internal/models"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/repository"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
+	"github.com/Ranik23/tbank-tech/scrapper/pkg/github_client/utils"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -15,18 +23,18 @@ var (
 )
 
 type Service interface {
-	RegisterUser(ctx context.Context, userID uint, name string) error
+	RegisterUser(ctx context.Context, userID uint, name string, token string) error
 	DeleteUser(ctx context.Context, userID uint) error
 	GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error)
-	AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error)
-	RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error
+	AddLink(ctx context.Context, link string, userID uint) error
+	RemoveLink(ctx context.Context, link string, userID uint) error
 }
 
 type service struct {
 	txManager repository.TxManager
-	logger   *slog.Logger
-	hub      hub.Hub
-	repo     repository.Repository
+	logger    *slog.Logger
+	hub       hub.Hub
+	repo      repository.Repository
 }
 
 func NewService(repo repository.Repository, txManager repository.TxManager, hub hub.Hub, logger *slog.Logger) (Service, error) {
@@ -38,75 +46,111 @@ func NewService(repo repository.Repository, txManager repository.TxManager, hub 
 	}, nil
 }
 
-func (s *service) RegisterUser(ctx context.Context, userID uint, name string) error {
+func (s *service) RegisterUser(ctx context.Context, userID uint, name string, token string) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		return s.repo.CreateUser(txCtx, userID, name)
+		_, err := s.repo.GetUserByName(txCtx, name)
+		if err != nil {
+			if !errors.Is(err, postgres.ErrNoUserFound) {
+				return err
+			}
+		}
+
+		if err := s.repo.CreateUser(txCtx, userID, name, token); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
 func (s *service) DeleteUser(ctx context.Context, userID uint) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		return s.repo.DeleteUser(txCtx, userID)
+		_, err := s.repo.GetUserByID(txCtx, userID)
+		if err != nil {
+			return err
+		}
+
+		if err := s.repo.DeleteUser(txCtx, userID); err != nil { // автоматически удалится из linkuser таблицы
+			return err
+		}
+		return nil
 	})
 }
 
 func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	var links []dbmodels.Link
 	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		var err error
-		links, err = s.repo.GetURLS(txCtx, userID)
+		_, err := s.repo.GetUserByID(txCtx, userID)
+		if err != nil {
+			return err
+		}
+
+		links, err = s.repo.GetLinks(txCtx, userID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return links, nil
+}
+
+func (s *service) AddLink(ctx context.Context, link string, userID uint) error {
+	_, _, err := utils.GetLinkParams(link)
+	if err != nil {
+		s.logger.Error("Wrong URL schema", slog.String("error", err.Error()))
 		return err
-	})
-	return links, err
-}
+	}
 
-func (s *service) AddLink(ctx context.Context, link dbmodels.Link, userID uint) (*dbmodels.Link, error) {
-	var linkNew *dbmodels.Link
-
-	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		if link.Url == EmptyLinkURL {
-			return ErrEmptyLink
-		}
-
-		if err := s.hub.AddLink(link.Url, userID); err != nil {
-			return err
-		}
-
-		if err := s.repo.CreateLink(txCtx, link.Url); err != nil {
-			return err
-		}
-
-		if err := s.repo.CreateUser(txCtx, userID, "random"); err != nil {
-			return err
-		}
-
-		var err error
-		linkNew, err = s.repo.GetLinkByURL(txCtx, link.Url)
-		if err != nil {
-			return err
-		}
-
-		return s.repo.CreateLinkUser(txCtx, linkNew.ID, userID)
-	})
-
-	return linkNew, err
-}
-
-func (s *service) RemoveLink(ctx context.Context, link dbmodels.Link, userID uint) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		if link.Url == EmptyLinkURL {
-			return ErrEmptyLink
+		user, err := s.repo.GetUserByID(txCtx, userID)
+		if err != nil {
+			return err // надо зарегаться
 		}
 
-		if err := s.hub.RemoveLink(link.Url, userID); err != nil {
-			return err
+		err = s.repo.CreateLink(txCtx, link)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if !(errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation) {
+				return err // если ошибка связана с тем, что уже есть такая ссылка - то ничего страшного, иначе выводим ошибку
+			}
 		}
 
-		linkNew, err := s.repo.GetLinkByURL(txCtx, link.Url)
+		linkObj, err := s.repo.GetLinkByURL(txCtx, link) // получаем ID ссылки
 		if err != nil {
 			return err
 		}
 
-		return s.repo.DeleteLink(txCtx, linkNew.ID)
+		if err := s.repo.CreateLinkUser(txCtx, linkObj.ID, userID); err != nil {
+			return err
+		}
+
+		return s.hub.AddLink(link, userID, user.Token, 10*time.Second)
+	})
+}
+
+func (s *service) RemoveLink(ctx context.Context, link string, userID uint) error {
+	_, _, err := utils.GetLinkParams(link)
+	if err != nil {
+		s.logger.Error("Wrong URL schema", slog.String("error", err.Error()))
+		return err
+	}
+	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+		linkObj, err := s.repo.GetLinkByURL(txCtx, link)
+		if err != nil {
+			return err // такой ссылки нет
+		}
+
+		if err := s.repo.DeleteLink(txCtx, linkObj.ID); err != nil {
+			return err
+		}
+
+		if err := s.hub.RemoveLink(link, userID); err != nil { // автоматически удалится из linkuser таблицы
+			return err
+		}
+		return nil
 	})
 }
