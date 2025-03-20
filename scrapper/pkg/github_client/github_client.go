@@ -13,19 +13,19 @@ type GitHubClient interface {
 	LatestCommit(ctx context.Context, owner string, repo string, token string, opts *github.CommitsListOptions) (*github.RepositoryCommit, *github.Response, error)
 }
 
-type GitHubClientImpl struct {
+type gitHubClient struct {
 	client *github.Client
 	logger *slog.Logger
 }
 
 func NewRealGitHubClient(logger *slog.Logger) GitHubClient {
-	return &GitHubClientImpl{
+	return &gitHubClient{
 		client: github.NewClient(http.DefaultClient),
 		logger: logger,
 	}
 }
 
-func (g *GitHubClientImpl) ListCommits(ctx context.Context, owner, repo string, token string,
+func (g *gitHubClient) ListCommits(ctx context.Context, owner, repo string, token string,
 	opts *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
 
 	g.logger.Info("Fetching commits", slog.String("owner", owner), slog.String("repo", repo))
@@ -36,8 +36,6 @@ func (g *GitHubClientImpl) ListCommits(ctx context.Context, owner, repo string, 
 		return nil, nil, err
 	}
 	req.Header.Set("Authorization", "token "+token)
-
-	g.logger.Info("Token - ", slog.String("token", token))
 
 	var commits []*github.RepositoryCommit
 	resp, err := g.client.Do(ctx, req, &commits)
@@ -50,7 +48,7 @@ func (g *GitHubClientImpl) ListCommits(ctx context.Context, owner, repo string, 
 	return commits, resp, nil
 }
 
-func (g *GitHubClientImpl) LatestCommit(ctx context.Context, owner string, repo string, token string,
+func (g *gitHubClient) LatestCommit(ctx context.Context, owner string, repo string, token string,
 	opts *github.CommitsListOptions) (*github.RepositoryCommit, *github.Response, error) {
 
 	g.logger.Info("Fetching latest commit", slog.String("owner", owner), slog.String("repo", repo))
@@ -60,9 +58,7 @@ func (g *GitHubClientImpl) LatestCommit(ctx context.Context, owner string, repo 
 		g.logger.Error("Failed to create request", slog.String("error", err.Error()))
 		return nil, nil, err
 	}
-	req.Header.Set("Authorization", "token "+token)
-
-	g.logger.Info("Token - ", slog.String("token", token))
+	req.Header.Set("Authorization", "token " + token)
 	
 	var commits []*github.RepositoryCommit
 	resp, err := g.client.Do(ctx, req, &commits)

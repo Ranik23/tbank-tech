@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"log/slog"
-
-	"github.com/Ranik23/tbank-tech/bot/config"
 	"github.com/Ranik23/tbank-tech/scrapper/api/proto/gen"
 
 	"google.golang.org/grpc"
@@ -20,15 +18,13 @@ type Service interface {
 }
 
 type service struct {
-	config *config.Config
 	client gen.ScrapperClient
 	logger *slog.Logger
 }
 
-func NewService(connScrapper *grpc.ClientConn, config *config.Config, logger *slog.Logger) Service {
+func NewService(connScrapper grpc.ClientConnInterface, logger *slog.Logger) Service {
 	client := gen.NewScrapperClient(connScrapper)
 	return &service{
-		config: config,
 		logger: logger,
 		client: client,
 	}

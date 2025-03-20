@@ -48,7 +48,7 @@ func NewService(repo repository.Repository, txManager repository.TxManager, hub 
 
 func (s *service) RegisterUser(ctx context.Context, userID uint, name string, token string) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		_, err := s.repo.GetUserByName(txCtx, name)
+		_, err := s.repo.GetUserByID(txCtx, userID)
 		if err != nil {
 			if !errors.Is(err, postgres.ErrNoUserFound) {
 				return err
@@ -78,8 +78,8 @@ func (s *service) DeleteUser(ctx context.Context, userID uint) error {
 
 func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
 	var links []dbmodels.Link
-	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		_, err := s.repo.GetUserByID(txCtx, userID)
+	if err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+		_, err := s.repo.GetUserByID(txCtx, userID);
 		if err != nil {
 			return err
 		}
@@ -89,9 +89,7 @@ func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, e
 			return err
 		}
 		return nil
-	})
-
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -108,18 +106,18 @@ func (s *service) AddLink(ctx context.Context, link string, userID uint) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		user, err := s.repo.GetUserByID(txCtx, userID)
 		if err != nil {
-			return err // надо зарегаться
+			return err
 		}
 
 		err = s.repo.CreateLink(txCtx, link)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if !(errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation) {
-				return err // если ошибка связана с тем, что уже есть такая ссылка - то ничего страшного, иначе выводим ошибку
+				return err
 			}
 		}
 
-		linkObj, err := s.repo.GetLinkByURL(txCtx, link) // получаем ID ссылки
+		linkObj, err := s.repo.GetLinkByURL(txCtx, link)
 		if err != nil {
 			return err
 		}

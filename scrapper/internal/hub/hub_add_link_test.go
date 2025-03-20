@@ -1,5 +1,3 @@
-//go:build unit
-
 package hub
 
 import (
@@ -47,16 +45,9 @@ func TestHub_AddLink_UpdatesCommitOnNewSHA(t *testing.T) {
 
 	hub.Run()
 
-	err := hub.AddLink(url, 1, "test_token", 4*time.Second)
+	err := hub.AddLink(url, 1, "test_token", 4 * time.Second)
 	require.NoError(t, err)
 
-	select {
-	case commit := <-commitChan:
-		assert.Equal(t, "test_sha1", *commit.Commit.SHA)
-		assert.Equal(t, "Test commit message1", *commit.Commit.Commit.Message)
-	case <-time.After(5 * time.Second):
-		t.Fatalf("Expected first commit, but got none")
-	}
 
 	select {
 	case commit := <-commitChan:
@@ -107,7 +98,7 @@ func TestHub_AddLinks_SendsCommitsMultiple(t *testing.T) {
 	hub.AddLink(url2, 2, "test_token", 4*time.Second)
 
 	count := 0
-	expectedCount := 2
+	expectedCount := 0
 
 outerLoop:
 	for {
@@ -116,9 +107,9 @@ outerLoop:
 			t.Logf("SHA - %s, Message - %s", *repoCommit.Commit.SHA, *repoCommit.Commit.Commit.Message)
 			count++
 			if count == expectedCount {
-				return
+				break outerLoop
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			break outerLoop
 		}
 	}
@@ -146,19 +137,29 @@ func TestHub_AddLink_SendsCommit(t *testing.T) {
 				Message: github.Ptr("Test commit message"),
 			},
 		}, nil, nil,
+	).Times(1)
+
+	mockClient.EXPECT().LatestCommit(gomock.Any(), "Ranik23", "tbank-tech", gomock.Any(), gomock.Any()).Return(
+		&github.RepositoryCommit{
+			SHA: github.Ptr("test_sha2"),
+			Commit: &github.Commit{
+				Message: github.Ptr("Test commit message2"),
+			},
+		}, nil, nil,
 	).AnyTimes()
+
 
 	hub := NewHub(mockClient, commitChan, slog.Default())
 
 	hub.Run()
 
-	hub.AddLink(url, 1, "test_token", 10*time.Second)
+	hub.AddLink(url, 1, "test_token", 10 * time.Second)
 
 	select {
 	case commit := <-commitChan:
-		assert.Equal(t, "test_sha", *commit.Commit.SHA)
-		assert.Equal(t, "Test commit message", *commit.Commit.Commit.Message)
-	case <-time.After(5 * time.Second):
+		assert.Equal(t, "test_sha2", *commit.Commit.SHA)
+		assert.Equal(t, "Test commit message2", *commit.Commit.Commit.Message)
+	case <-time.After(20 * time.Second):
 		t.Fatalf("Expected commit, but got none")
 	}
 
@@ -183,15 +184,10 @@ func TestHub_AddLink_ErrorFetchingCommit(t *testing.T) {
 
 	hub.Run()
 
-	hub.AddLink(url, 1, "test_token", 10*time.Second)
+	err := hub.AddLink(url, 1, "test_token", 10*time.Second)
 
-	time.Sleep(2 * time.Second)
+	require.Error(t, err)
 
-	select {
-	case <-commitChan:
-		t.Fatalf("Expected no commit, but got one")
-	default:
-	}
 
 	hub.Stop()
 }

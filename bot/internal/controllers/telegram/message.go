@@ -12,8 +12,7 @@ import (
 func (b *BotHandlers) MessageHandler() telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		userID := c.Sender().ID
-		chatID := c.Chat().ID
-
+		
 		userRaw, exists := b.users.Load(userID)
 		var user *models.User
 		if !exists {
@@ -31,7 +30,7 @@ func (b *BotHandlers) MessageHandler() telebot.HandlerFunc {
 			user.State = StateFinished
 			b.users.Store(userID, user)
 
-			response, err := b.botService.RemoveLink(context.Background(), chatID, user.Link)
+			response, err := b.botService.RemoveLink(context.Background(), userID, user.Link)
 			if err != nil {
 				return c.Send("❌ Ошибка удаления ссылки!")
 			}
@@ -39,7 +38,7 @@ func (b *BotHandlers) MessageHandler() telebot.HandlerFunc {
 
 		case StateWaitingForLinkLINK:
 			user.Link = text
-			response, err := b.botService.AddLink(context.Background(), chatID, user.Link)
+			response, err := b.botService.AddLink(context.Background(), userID, user.Link)
 			user.State = StateFinished
 			b.users.Store(userID, user)
 

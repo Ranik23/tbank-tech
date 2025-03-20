@@ -1,21 +1,20 @@
 package telegram
 import (
 	"context"
-	"fmt"
 	"gopkg.in/telebot.v3"
 )
 
 
 func (b *BotHandlers) ListLinksHandler() telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		chatID := c.Chat().ID
-		responses, err := b.botService.ListLinks(context.Background(), chatID)
+		userID := c.Sender().ID
+		responses, err := b.botService.ListLinks(context.Background(), userID)
 		if err != nil {
-			return c.Send(fmt.Sprintf("Ошибка: %v", err))
+			return c.Send("❌ Не удалось получить отслеживаемые ссылки")
 		}
 
 		if len(responses.Links) == 0 {
-			c.Send("No Links Tracking")
+			c.Send("Вы не отслеживаете ни одной ссылки")
 			return nil
 		}
 

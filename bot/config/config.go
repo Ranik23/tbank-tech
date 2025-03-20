@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	ScrapperService 	ScrapperServiceConfig
-	DataBase			DataBaseConfig
-	Telegram			TelegramConfig 
-	TelegramBotServer	TelegramBotServerConfig
-	Kafka				KafkaConfig
+	ScrapperService 		ScrapperServiceConfig
+	DataBase				DataBaseConfig
+	Telegram				TelegramConfig 
+	TelegramBotServer		TelegramBotServerConfig
+	Kafka					KafkaConfig
+	TelegramBotHTTPServer 	TelegramBotHTTPServerConfig
 }
 
 
@@ -48,6 +49,11 @@ func LoadConfig() (*Config, error) {
 			Host: viper.GetString("TELERGAM_BOT_HOST"),
 			Port: viper.GetString("TELERGAM_BOT_PORT"),
 		},
+		TelegramBotHTTPServer: TelegramBotHTTPServerConfig{
+			Host: viper.GetString("TELEGRAM_BOT_HTTP_HOST"),
+			Port: viper.GetString("TELEGRAM_BOT_HTTP_PORT"),
+		},
+		
 	}, nil
 
 

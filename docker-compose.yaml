@@ -11,6 +11,8 @@ services:
       - zookeeper
     networks:
       - kafkanetwork
+    ports:
+      - 7071:7071
     environment:
       - KAFKA_ADDRESSES=kafka:9092
       - KAFKA_TOPIC=commits
@@ -22,7 +24,12 @@ services:
       - DATABASE_SSL=disable
       - SCRAPPER_SERVICE_HOST=scrapper
       - SCRAPPER_SERVICE_PORT=8082
-
+      - SCRAPPER_SERVICE_HTTP_HOST=localhost
+      - SCRAPPER_SERVICE_HTTP_PORT=9090
+      - TELEGRAM_BOT_HTTP_HOST=localhost
+      - TELEGRAM_BOT_HTTP_PORT=7071
+      - TELERGAM_BOT_HOST=0.0.0.0
+      - TELEGRAM_BOT_PORT=8081
   scrapper:
     build:
       context: .
@@ -33,6 +40,8 @@ services:
       - zookeeper
     networks:
       - kafkanetwork
+    ports:
+      - 9090:9090
     environment:
       - KAFKA_ADDRESSES=kafka:9092
       - KAFKA_TOPIC=commits
@@ -44,8 +53,12 @@ services:
       - DATABASE_SSL=disable
       - SCRAPPER_SERVICE_HOST=0.0.0.0
       - SCRAPPER_SERVICE_PORT=8082
-
-
+      - SCRAPPER_SERVICE_HTTP_HOST=localhost
+      - SCRAPPER_SERVICE_HTTP_PORT=9090
+      - TELEGRAM_BOT_HTTP_HOST=bot
+      - TELEGRAM_BOT_HTTP_PORT=7071
+      - TELERGAM_BOT_HOST=bot
+      - TELEGRAM_BOT_PORT=8081
   zookeeper:
     image: wurstmeister/zookeeper:latest
     container_name: zookeeper

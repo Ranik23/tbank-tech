@@ -70,16 +70,17 @@ func (h *hub) Run() {
 
 func (h *hub) AddLink(link string, userID uint, token string, interval time.Duration) error {
 	const op = "Hub.AddLink"
+
 	pair := Pair{link, strconv.Itoa(int(userID))}
 	owner, repo, err := utils.GetLinkParams(link)
 	if err != nil {
-		h.logger.Error(op, slog.String("message", "Wrong URL scheme"), slog.String("err", err.Error()))
+		h.logError(op, "Wrong URL scheme", err)
 		return fmt.Errorf("wrong url scheme")
 	}
 
-	theLatestCommit, _, err := h.gitClient.LatestCommit(context.Background(), owner, repo, token, nil)
+	theLatestCommit, err := h.fetchLatestCommit(owner, repo, token)
 	if err != nil {
-		h.logger.Error("Failed to get the latest commit", slog.String("error", err.Error()))
+		h.logError(op, "Failed to get the latest commit", err)
 		return err
 	}
 	h.latestCommitSHA.Store(link, theLatestCommit.GetSHA())
@@ -87,43 +88,65 @@ func (h *hub) AddLink(link string, userID uint, token string, interval time.Dura
 	ctx, cancel := context.WithCancel(context.Background())
 	h.pairCancelFunc.Store(pair, cancel)
 
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				h.logger.Info(op, slog.String("message", "Context cancelled"), slog.String("link", link), slog.Int("userID", int(userID)))
-				return
-			case <-ticker.C:
-
-				timeoutCtx, cancelTimeOut := context.WithTimeout(context.Background(), 10*time.Second)
-
-				commit, _, err := h.gitClient.LatestCommit(timeoutCtx, owner, repo, token, nil)
-				if err != nil {
-					h.logger.Error(op, slog.String("message", "Failed to fetch the latest commit"), slog.String("err", err.Error()))
-					cancelTimeOut()
-					continue
-				}
-
-				cancelTimeOut()
-
-				val, ok := h.latestCommitSHA.Load(link)
-
-				if !ok || commit.GetSHA() != val {
-					h.latestCommitSHA.Store(link, commit.GetSHA())
-					h.commitChan <- CustomCommit{Commit: commit, UserID: userID}
-				}
-			case <-h.stopCh:
-				h.logger.Info(op, slog.String("message", "Goroutine exited"), slog.String("link", link), slog.Int("userID", int(userID)))
-				return
-			}
-		}
-	}()
+	go h.trackCommits(ctx, link, owner, repo, token, userID, interval, op)
 
 	return nil
 }
+
+func (h *hub) fetchLatestCommit(owner, repo, token string) (*github.RepositoryCommit, error) {
+	commit, _, err := h.gitClient.LatestCommit(context.Background(), owner, repo, token, nil)
+	if err != nil {
+		return nil, err
+	}
+	return commit, nil
+}
+
+func (h *hub) trackCommits(ctx context.Context, link, owner, repo, token string, userID uint, interval time.Duration, op string) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			h.logInfo(op, "Context cancelled", link, userID)
+			return
+
+		case <-ticker.C:
+			h.checkForNewCommit(link, owner, repo, token, userID, op)
+
+		case <-h.stopCh:
+			h.logInfo(op, "Goroutine exited", link, userID)
+			return
+		}
+	}
+}
+
+func (h *hub) checkForNewCommit(link, owner, repo, token string, userID uint, op string) {
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	commit, _, err := h.gitClient.LatestCommit(timeoutCtx, owner, repo, token, nil)
+	if err != nil {
+		h.logError(op, "Failed to fetch the latest commit", err)
+		return
+	}
+
+	val, ok := h.latestCommitSHA.Load(link)
+	if !ok || commit.GetSHA() != val {
+		h.latestCommitSHA.Store(link, commit.GetSHA())
+		h.commitChan <- CustomCommit{Commit: commit, UserID: userID}
+	}
+}
+
+
+func (h *hub) logError(op, msg string, err error) {
+	h.logger.Error(op, slog.String("message", msg), slog.String("err", err.Error()))
+}
+
+func (h *hub) logInfo(op, msg, link string, userID uint) {
+	h.logger.Info(op, slog.String("message", msg), slog.String("link", link), slog.Int("userID", int(userID)))
+}
+
 
 func (h *hub) Stop() {
 	const op = "Hub.Stop"

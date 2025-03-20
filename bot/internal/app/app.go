@@ -16,6 +16,7 @@ import (
 	"github.com/Ranik23/tbank-tech/bot/config"
 	grpcserver "github.com/Ranik23/tbank-tech/bot/internal/controllers/grpc"
 	telegramhandlers "github.com/Ranik23/tbank-tech/bot/internal/controllers/telegram"
+	"github.com/Ranik23/tbank-tech/bot/internal/gateway"
 	kafkaconsumer "github.com/Ranik23/tbank-tech/bot/internal/kafka_consumer"
 	"github.com/Ranik23/tbank-tech/bot/internal/service"
 	telegramproducer "github.com/Ranik23/tbank-tech/bot/internal/telegram_producer"
@@ -77,7 +78,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	botService := service.NewService(connScrapper, config, logger)
+	botService := service.NewService(connScrapper, logger)
 
 
 	bot, err := telebot.NewBot(telebot.Settings{
@@ -157,7 +158,6 @@ func NewApp() (*App, error) {
 
 
 func (a *App) Run() error {
-
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
 		defer cancel()
@@ -165,6 +165,10 @@ func (a *App) Run() error {
 			a.logger.Error("Failed to close resources", slog.String("error", err.Error()))
 		}
 	}()
+
+
+	grpcAddr := fmt.Sprintf("%s:%s", a.config.TelegramBotServer.Host, a.config.TelegramBotServer.Port)
+	httpAddr := fmt.Sprintf("%s:%s", a.config.TelegramBotHTTPServer.Host, a.config.TelegramBotHTTPServer.Port)
 
 	a.logger.Info("Starting the bot...")
 
@@ -180,6 +184,14 @@ func (a *App) Run() error {
 		if err := a.grpcServer.Serve(listener); err != nil {
 			errorCh <- err
 		}
+	}()
+
+	go func() {
+		a.logger.Info("Starting Bot Proxy Server...")
+		if err := gateway.RunGateway(context.Background(), grpcAddr, httpAddr, a.logger); err != nil {
+			errorCh <- err
+		}
+
 	}()
 
 	go func() {

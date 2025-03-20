@@ -2,14 +2,16 @@ syntax = "proto3";
 
 package server;
 
-option go_package = "/proto/gen;gen";
+option go_package = "bot/api/proto/gen;gen";
+
+import "google/api/annotations.proto"; // -I bot/api/third_party
 
 message CommitUpdate {
     string sha = 1;
-    string author = 2;            // Автор коммита
-    string message = 3;           // Сообщение коммита
-    string timestamp = 4;         // Время коммита
-    string url = 5;               // Ссылка на репо
+    string author = 2;            
+    string message = 3;           
+    string timestamp = 4;         
+    string url = 5;          
 }
 
 message CommitUpdateAnswer {
@@ -17,5 +19,10 @@ message CommitUpdateAnswer {
 }
 
 service Bot {
-    rpc SendCommitUpdate(CommitUpdate) returns (CommitUpdateAnswer);
+    rpc SendCommitUpdate(CommitUpdate) returns (CommitUpdateAnswer) {
+        option (google.api.http) = {
+            post: "/v1/commit"
+            body: "*"
+        };
+    }
 }
