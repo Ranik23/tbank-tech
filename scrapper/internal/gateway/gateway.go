@@ -1,7 +1,9 @@
 package gateway
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -14,6 +16,7 @@ import (
 
 func RunGateway(ctx context.Context, grpcAddr string, httpAddr string, logger *slog.Logger) error {
 	const op = "Gateway.RunGateway"
+
 	mux := runtime.NewServeMux()
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -22,5 +25,21 @@ func RunGateway(ctx context.Context, grpcAddr string, httpAddr string, logger *s
 		logger.Error(op, slog.String("message", "Failed to register gRPC handler"), slog.String("error", err.Error()))
 		return err
 	}
-	return http.ListenAndServe(httpAddr, mux)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Error(op, slog.String("message", "Failed to read request body"), slog.String("error", err.Error()))
+			http.Error(w, "Failed to read request body", http.StatusBadRequest)
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewReader(body))
+
+		logger.Info(op, slog.String("incoming_request", string(body)))
+		mux.ServeHTTP(w, r)
+	})
+
+	logger.Info(op, slog.String("message", "Starting Scrapper Proxy Server"), slog.String("httpAddr", httpAddr))
+	return http.ListenAndServe(httpAddr, handler)
 }

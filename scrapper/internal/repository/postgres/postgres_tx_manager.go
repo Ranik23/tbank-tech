@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	txmanager "github.com/Ranik23/tbank-tech/scrapper/internal/repository"
@@ -32,8 +33,14 @@ func (t *txPostgresManager) GetExecutor(ctx context.Context) txmanager.Executor 
 }
 
 func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	opts := pgx.TxOptions{
+		IsoLevel:   pgx.Serializable,
+		AccessMode: pgx.ReadWrite,
+	}
 
-	tx, err := t.pool.BeginTx(ctx, pgx.TxOptions{})
+	var err error
+
+	tx, err := t.pool.BeginTx(ctx, opts)
 	if err != nil {
 		t.logger.Error("Failed to start the transaction", slog.String("error", err.Error()))
 		return err
@@ -41,17 +48,19 @@ func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Cont
 
 	defer func() {
 		if err != nil {
-			if rollbackError := tx.Rollback(ctx); rollbackError != nil {
+			if rollbackError := tx.Rollback(ctx); rollbackError != nil && !errors.Is(rollbackError, pgx.ErrTxClosed) {
 				t.logger.Error("Failed to rollback tx", slog.String("error", rollbackError.Error()))
 			}
+			t.logger.Info("Rollback successfully done!")
 		}
 	}()
 
 	type txKey struct{}
 
-	ctxWithTX := context.WithValue(ctx, txKey{}, tx)
+	ctx = context.WithValue(ctx, txKey{}, tx)
 
-	if err = fn(ctxWithTX); err != nil {
+	err = fn(ctx)
+	if err != nil {
 		t.logger.Error("Failed to run the chain", slog.String("error", err.Error()))
 		return err
 	}

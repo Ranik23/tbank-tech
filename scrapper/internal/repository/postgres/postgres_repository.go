@@ -82,6 +82,8 @@ func (s *postgresRepository) GetUserByName(ctx context.Context, name string) (us
 	return user, nil
 }
 
+
+// nil, NoUserFound - если такого пользователя нет, (nil, err) - ошибка поиска, (user, nil) - нашли
 func (s *postgresRepository) GetUserByID(ctx context.Context, userID uint) (user *dbmodels.User, err error) {
 	s.logger.Info("GetUserByID called", slog.Int64("userID", int64(userID)))
 
@@ -144,6 +146,10 @@ func (s *postgresRepository) GetLinkByURL(ctx context.Context, url string) (link
 	link = &dbmodels.Link{}
 	err = executor.QueryRow(ctx, query, url).Scan(&link.ID, &link.Url)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			s.logger.Warn("No link found with", slog.String("link", url))
+			return nil, ErrNoLinkFound
+		}
 		s.logger.Error("GetLink failed", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("%w: %v", ErrFailedToQuery, err)
 	}
