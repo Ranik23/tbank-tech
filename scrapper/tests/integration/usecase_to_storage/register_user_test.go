@@ -89,10 +89,25 @@ func TestRegisterUser(t *testing.T) {
 	serv, err := service.NewService(repository, txManager, mockHub, logger)
 	require.NoError(t, err)
 
+
+	// 1
 	err = serv.RegisterUser(ctx, 1, "anton", "test")
 	require.NoError(t, err)
-
+	
 	err = serv.RegisterUser(ctx, 1, "kasma", "test")
+	require.Error(t, err)
+
+
+	// 2
+	err = serv.RegisterUser(ctx, 2, "egor", "test")
+	require.NoError(t, err)
+
+	err = serv.DeleteUser(ctx, 2)
+	require.NoError(t, err)
+
+
+	// 3
+	err = serv.DeleteUser(ctx, 1000)
 	require.Error(t, err)
 
 }

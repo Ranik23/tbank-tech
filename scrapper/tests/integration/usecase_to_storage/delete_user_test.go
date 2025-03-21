@@ -84,7 +84,7 @@ func TestDeletesUser(t *testing.T) {
 
 	mockHub := mockhub.NewMockHub(ctrl)
 
-	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any(), "test", gomock.Any()).AnyTimes().Return(nil)
+	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	serv, err := service.NewService(repository, txManager, mockHub, logger)
 	require.NoError(t, err)

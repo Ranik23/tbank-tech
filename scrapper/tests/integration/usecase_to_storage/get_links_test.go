@@ -110,10 +110,10 @@ func TestGetLinks(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name:          "User with no links",
+			name:          "Non-existent user2",
 			userID:        2, // Пользователь без ссылок
 			expectedLinks: 0,
-			expectedError: postgres.ErrNoUserFound,
+			expectedError: service.ErrUserNotFound,
 		},
 		{
 			name:          "User with links",
@@ -125,7 +125,7 @@ func TestGetLinks(t *testing.T) {
 			name:          "Non-existent user",
 			userID:        999, // Несуществующий пользователь
 			expectedLinks: 0,
-			expectedError: postgres.ErrNoUserFound,
+			expectedError: service.ErrUserNotFound,
 		},
 	}
 
