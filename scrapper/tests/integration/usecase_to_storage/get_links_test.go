@@ -27,7 +27,7 @@ func TestGetLinks(t *testing.T) {
 	// Настройка логгера
 	logger := slog.Default()
 
-	cfg, err := config.LoadConfig(".env")
+	cfg, err := config.LoadConfig("/home/anton/tbank-tech/.env")
 	require.NoError(t, err)
 
 	// Настройка контейнера с PostgreSQL

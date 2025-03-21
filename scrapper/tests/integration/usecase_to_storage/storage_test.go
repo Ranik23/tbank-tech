@@ -7,8 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/Ranik23/tbank-tech/scrapper/config"
@@ -30,10 +28,7 @@ func Test(t *testing.T) {
 
 	logger := slog.Default()
 
-	_, currentFile, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(currentFile)
-
-	cfg, err := config.LoadConfig(filepath.Join(testDir, ".env"))
+	cfg, err := config.LoadConfig("/home/anton/tbank-tech/.env")
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -77,29 +72,27 @@ func Test(t *testing.T) {
 		err = sqlDB.Close()
 		require.NoError(t, err)
 	}()
-
 	err = goose.Up(sqlDB, "../../../internal/migrations")
 	require.NoError(t, err)
 
 	txManager := postgres.NewTxManager(pool, logger)
-
 	repository := postgres.NewPostgresRepository(txManager, logger)
-
 	ctrl := gomock.NewController(t)
-
 	mockHub := mockhub.NewMockHub(ctrl)
-
 	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-
-	serv, err := service.NewService(repository, txManager, mockHub, logger)
+	service, err := service.NewService(repository, txManager, mockHub, logger)
 	require.NoError(t, err)
+
 
 	exampleLink := "https://github.com/epchamp001/avito-tech-merch"
+	exampleName := "anton"
+	exampleID := 1
+	exampleToken := "test"
 
-	err = serv.RegisterUser(context.Background(), 1, "anton", "test")
+	err = service.RegisterUser(context.Background(), uint(exampleID), exampleName, exampleToken)
 	require.NoError(t, err)
 
-	err = serv.AddLink(context.Background(), exampleLink, 1)
+	err = service.AddLink(context.Background(), exampleLink, uint(exampleID))
 	require.NoError(t, err)
 
 	var (
@@ -111,11 +104,11 @@ func Test(t *testing.T) {
 	err = pool.QueryRow(ctx, `SELECT user_id, name FROM users WHERE user_id = $1`, 1).Scan(&userID, &name)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, userID)
-	require.Equal(t, "anton", name)
+	require.Equal(t, exampleID, userID)
+	require.Equal(t, exampleName, name)
 
 	err = pool.QueryRow(ctx, `SELECT url FROM links WHERE url = $1`, "https://github.com/epchamp001/avito-tech-merch").Scan(&link)
 	require.NoError(t, err)
 
-	require.Equal(t, link, "https://github.com/epchamp001/avito-tech-merch")
+	require.Equal(t, link, exampleLink)
 }

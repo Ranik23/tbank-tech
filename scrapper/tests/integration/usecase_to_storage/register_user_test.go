@@ -28,7 +28,7 @@ func TestRegisterUser(t *testing.T) {
 
 	logger := slog.Default()
 
-	cfg, err := config.LoadConfig(".env")
+	cfg, err := config.LoadConfig("/home/anton/tbank-tech/.env")
 	require.NoError(t, err)
 
 	ctx := context.Background()
