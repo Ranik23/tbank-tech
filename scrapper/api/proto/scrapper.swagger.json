@@ -210,8 +210,7 @@
         "token": {
           "type": "string"
         }
-      },
-      "title": "запросы"
+      }
     },
     "ScrapperRemoveLinkBody": {
       "type": "object",
@@ -255,8 +254,7 @@
         "message": {
           "type": "string"
         }
-      },
-      "title": "ответы"
+      }
     },
     "scrapperDeleteUserResponse": {
       "type": "object",

@@ -22,7 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// запросы
 type RegisterUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TgUserId      int64                  `protobuf:"varint,1,opt,name=tg_user_id,json=tgUserId,proto3" json:"tg_user_id,omitempty"`
@@ -363,7 +362,6 @@ func (x *RemoveLinkRequest) GetUrl() string {
 	return ""
 }
 
-// ответы
 type AddLinkResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`

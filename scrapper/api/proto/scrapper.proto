@@ -42,7 +42,6 @@ service Scrapper {
   }
 }
 
-// запросы
 message RegisterUserRequest {
   int64 tg_user_id = 1;
   string name = 2; 
@@ -75,7 +74,6 @@ message RemoveLinkRequest {
   string url = 2;
 }
 
-// ответы
 message AddLinkResponse {
   string message = 1;
 }
