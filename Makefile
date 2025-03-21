@@ -21,6 +21,3 @@ scrapper:
 	go run scrapper/cmd/main/main.go
 
 .PHONY: all bot scrapper protoc protoc-swagger
-
-
-## mockgen -source=pkg/github/client.go -destination=internal/mocks/github_mock.go -package=mocks
