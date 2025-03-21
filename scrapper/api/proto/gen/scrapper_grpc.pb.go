@@ -35,8 +35,8 @@ type ScrapperClient interface {
 	RegisterUser(ctx context.Context, in *RegisterUserRequest, opts ...grpc.CallOption) (*RegisterUserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	GetLinks(ctx context.Context, in *GetLinksRequest, opts ...grpc.CallOption) (*ListLinksResponse, error)
-	AddLink(ctx context.Context, in *AddLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error)
-	RemoveLink(ctx context.Context, in *RemoveLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error)
+	AddLink(ctx context.Context, in *AddLinkRequest, opts ...grpc.CallOption) (*AddLinkResponse, error)
+	RemoveLink(ctx context.Context, in *RemoveLinkRequest, opts ...grpc.CallOption) (*RemoveLinkResponse, error)
 }
 
 type scrapperClient struct {
@@ -77,9 +77,9 @@ func (c *scrapperClient) GetLinks(ctx context.Context, in *GetLinksRequest, opts
 	return out, nil
 }
 
-func (c *scrapperClient) AddLink(ctx context.Context, in *AddLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error) {
+func (c *scrapperClient) AddLink(ctx context.Context, in *AddLinkRequest, opts ...grpc.CallOption) (*AddLinkResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LinkResponse)
+	out := new(AddLinkResponse)
 	err := c.cc.Invoke(ctx, Scrapper_AddLink_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -87,9 +87,9 @@ func (c *scrapperClient) AddLink(ctx context.Context, in *AddLinkRequest, opts .
 	return out, nil
 }
 
-func (c *scrapperClient) RemoveLink(ctx context.Context, in *RemoveLinkRequest, opts ...grpc.CallOption) (*LinkResponse, error) {
+func (c *scrapperClient) RemoveLink(ctx context.Context, in *RemoveLinkRequest, opts ...grpc.CallOption) (*RemoveLinkResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LinkResponse)
+	out := new(RemoveLinkResponse)
 	err := c.cc.Invoke(ctx, Scrapper_RemoveLink_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -106,8 +106,8 @@ type ScrapperServer interface {
 	RegisterUser(context.Context, *RegisterUserRequest) (*RegisterUserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	GetLinks(context.Context, *GetLinksRequest) (*ListLinksResponse, error)
-	AddLink(context.Context, *AddLinkRequest) (*LinkResponse, error)
-	RemoveLink(context.Context, *RemoveLinkRequest) (*LinkResponse, error)
+	AddLink(context.Context, *AddLinkRequest) (*AddLinkResponse, error)
+	RemoveLink(context.Context, *RemoveLinkRequest) (*RemoveLinkResponse, error)
 	mustEmbedUnimplementedScrapperServer()
 }
 
@@ -127,10 +127,10 @@ func (UnimplementedScrapperServer) DeleteUser(context.Context, *DeleteUserReques
 func (UnimplementedScrapperServer) GetLinks(context.Context, *GetLinksRequest) (*ListLinksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLinks not implemented")
 }
-func (UnimplementedScrapperServer) AddLink(context.Context, *AddLinkRequest) (*LinkResponse, error) {
+func (UnimplementedScrapperServer) AddLink(context.Context, *AddLinkRequest) (*AddLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddLink not implemented")
 }
-func (UnimplementedScrapperServer) RemoveLink(context.Context, *RemoveLinkRequest) (*LinkResponse, error) {
+func (UnimplementedScrapperServer) RemoveLink(context.Context, *RemoveLinkRequest) (*RemoveLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveLink not implemented")
 }
 func (UnimplementedScrapperServer) mustEmbedUnimplementedScrapperServer() {}

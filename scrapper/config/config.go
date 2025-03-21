@@ -11,9 +11,11 @@ import (
 type Config struct {
 	ScrapperServer 		ScrapperServerConfig
 	DataBase			DataBaseConfig
-	Bot					BotServerConfig
+	BotServer			BotServerConfig
 	ScrapperServerHTTP 	ScrapperServerHTTPConfig
 	Kafka				KafkaConfig
+	BotServerHTTP		BotServerHTTPConfig
+	MetricServer		MetricServerConfig
 }
 
 func LoadConfig(envPath string) (*Config, error) {
@@ -31,7 +33,7 @@ func LoadConfig(envPath string) (*Config, error) {
 			Host: viper.GetString("SCRAPPER_SERVICE_HOST"),
 			Port: viper.GetString("SCRAPPER_SERVICE_PORT"),
 		},
-		Bot: BotServerConfig{
+		BotServer: BotServerConfig{
 			Host: viper.GetString("TELERGAM_BOT_HOST"),
 			Port: viper.GetString("TELEGRAM_BOT_PORT"),
 		},
@@ -50,6 +52,14 @@ func LoadConfig(envPath string) (*Config, error) {
 			Password: viper.GetString("DATABASE_PASSWORD"),
 			DBName: viper.GetString("DATABASE_NAME"),
 			SSL: viper.GetString("DATABASE_SSL"),
+		},
+		BotServerHTTP: BotServerHTTPConfig{
+			Host: viper.GetString("TELEGRAM_BOT_HOST_HTTP"),
+			Port: viper.GetString("TELEGRAM_BOT_PORT_HTTP"),
+		},
+		MetricServer: MetricServerConfig{
+			Host: viper.GetString("METRIC_SERVER_HOST"),
+			Port: viper.GetString("METRIC_SERVER_PORT"),
 		},
 	}, nil
 }

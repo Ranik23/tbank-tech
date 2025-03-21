@@ -10,92 +10,80 @@ option go_package = "scrapper/api/proto/gen;gen";
 service Scrapper {
   rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {
     option (google.api.http) = {
-      post: "/tg-chat/{tg_user_id}"
+      post: "/user/{tg_user_id}"
+      body: "*"
     };
   }
 
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {
-      delete: "/tg-chat/{tg_user_id}"
+      delete: "/user/{tg_user_id}"
     };
   }
 
   rpc GetLinks(GetLinksRequest) returns (ListLinksResponse) {
     option (google.api.http) = {
-      get: "/links"
+      get: "/users/{tg_user_id}/links"
     };
   }
 
-  rpc AddLink(AddLinkRequest) returns (LinkResponse) {
+  rpc AddLink(AddLinkRequest) returns (AddLinkResponse) {
     option (google.api.http) = {
-      post: "/links"
+      post: "/link/{tg_user_id}"
       body: "*"
     };
   }
 
-  rpc RemoveLink(RemoveLinkRequest) returns (LinkResponse) {
+  rpc RemoveLink(RemoveLinkRequest) returns (RemoveLinkResponse) {
     option (google.api.http) = {
-      delete: "/links"
+      patch: "/link/{tg_user_id}"
+      body: "*"
     };
   }
 }
 
-// Запрос для регистрации пользователя
+// запросы
 message RegisterUserRequest {
   int64 tg_user_id = 1;
-  string name = 2; // Имя пользователя
+  string name = 2; 
   string token = 3;
 }
 
-// Ответ на регистрацию пользователя
-message RegisterUserResponse {
-  string message = 1;
-}
-
-// Запрос для удаления пользователя
 message DeleteUserRequest {
   int64 tg_user_id = 1;
 }
 
-// Ответ на удаление пользователя
+message RegisterUserResponse {
+  string message = 1;
+}
+
 message DeleteUserResponse {
   string message = 1;
 }
 
-// Запрос для получения ссылок
 message GetLinksRequest {
   int64 tg_user_id = 1;
 }
 
-// Запрос для добавления ссылки
 message AddLinkRequest {
   int64 tg_user_id = 1;
   string url = 2;
 }
 
-// Запрос для удаления ссылки
 message RemoveLinkRequest {
   int64 tg_user_id = 1;
   string url = 2;
 }
 
-// Ответ на ссылку
-message LinkResponse {
-  int64 id = 1;
-  string url = 2;
+// ответы
+message AddLinkResponse {
+  string message = 1;
 }
 
-// Ответ на получение списка ссылок
+message RemoveLinkResponse {
+  string message = 1;
+}
+
 message ListLinksResponse {
-  repeated LinkResponse links = 1;
-  int32 size = 2;
-}
-
-// Ответ на ошибку API
-message ApiErrorResponse {
-  string description = 1;
-  string code = 2;
-  string exception_name = 3;
-  string exception_message = 4;
-  repeated string stacktrace = 5;
+  repeated string links = 1;
 }

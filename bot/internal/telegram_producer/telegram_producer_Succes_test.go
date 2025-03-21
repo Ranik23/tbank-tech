@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Ranik23/tbank-tech/bot/internal/models"
-	mockbot "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot/mock"
+	botmock "github.com/Ranik23/tbank-tech/bot/internal/telegram_producer/telegram_bot/mock"
 
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
@@ -32,7 +32,7 @@ func TestTelegramProducer_Success(t *testing.T) {
 	messageCh := make(chan sarama.ConsumerMessage)
 
 	ctrl := gomock.NewController(t)
-	mockBot := mockbot.NewMockTelegramBot(ctrl)
+	mockBot := botmock.NewMockTelegramBot(ctrl)
 
 	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 

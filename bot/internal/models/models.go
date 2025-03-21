@@ -14,4 +14,5 @@ type User struct {
 	State   int
 	Link    string
 	Name	string
+	Token	string
 }

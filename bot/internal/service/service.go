@@ -8,12 +8,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+// убрать gen структуры, а использовать свое
 type Service interface {
 	RegisterUser(ctx context.Context, id int64, name string, hashedToken string) (*gen.RegisterUserResponse, error)
 	DeleteUser(ctx context.Context, id int64) 									 (*gen.DeleteUserResponse, error)
 	Help(ctx context.Context) error
-	AddLink(ctx context.Context, userID int64, link string) 					 (*gen.LinkResponse, error)
-	RemoveLink(ctx context.Context, userID int64, link string) 					 (*gen.LinkResponse, error)
+	AddLink(ctx context.Context, userID int64, link string) 					 (*gen.AddLinkResponse, error)
+	RemoveLink(ctx context.Context, userID int64, link string) 					 (*gen.RemoveLinkResponse, error)
 	ListLinks(ctx context.Context, userID int64) 							     (*gen.ListLinksResponse, error)
 }
 
@@ -38,7 +39,6 @@ func (uc *service) RegisterUser(ctx context.Context, userID int64, name string, 
 		Name:     name,
 		Token:    hashedToken,
 	})
-
 	if err != nil {
 		uc.logger.Error("Failed to register user", slog.Int64("userID", userID), slog.String("error", err.Error()))
 		return nil, err
@@ -66,7 +66,7 @@ func (uc *service) Help(ctx context.Context) error {
 	return nil
 }
 
-func (uc *service) AddLink(ctx context.Context, userID int64, link string) (*gen.LinkResponse, error) {
+func (uc *service) AddLink(ctx context.Context, userID int64, link string) (*gen.AddLinkResponse, error) {
 	uc.logger.Info("Adding link", slog.Int64("userID", userID), slog.String("link", link))
 
 	resp, err := uc.client.AddLink(ctx, &gen.AddLinkRequest{
@@ -82,7 +82,7 @@ func (uc *service) AddLink(ctx context.Context, userID int64, link string) (*gen
 	return resp, nil
 }
 
-func (uc *service) RemoveLink(ctx context.Context, userID int64, link string) (*gen.LinkResponse, error) {
+func (uc *service) RemoveLink(ctx context.Context, userID int64, link string) (*gen.RemoveLinkResponse, error) {
 	uc.logger.Info("Removing link", slog.Int64("userID", userID), slog.String("link", link))
 
 	resp, err := uc.client.RemoveLink(ctx, &gen.RemoveLinkRequest{

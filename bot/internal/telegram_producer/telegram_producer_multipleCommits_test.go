@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Ranik23/tbank-tech/bot/internal/models"
-	telegrambot "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot/mock"
+	botmock "github.com/Ranik23/tbank-tech/bot/internal/telegram_producer/telegram_bot/mock"
 
 	"github.com/IBM/sarama"
 	"github.com/golang/mock/gomock"
@@ -43,7 +43,7 @@ func TestTelegramProducer_MultipleMessages(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockBot := telegrambot.NewMockTelegramBot(ctrl)
+	mockBot := botmock.NewMockTelegramBot(ctrl)
 
 	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 1}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 	mockBot.EXPECT().Send(gomock.Eq(&telebot.User{ID: 2}), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)

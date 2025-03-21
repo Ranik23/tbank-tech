@@ -22,7 +22,5 @@ func RunGateway(ctx context.Context, grpcAddr string, httpAddr string, logger *s
 		logger.Error(op, slog.String("message", "Failed to register gRPC handler"), slog.String("error", err.Error()))
 		return err
 	}
-
-	logger.Info(op, slog.String("message", "Starting proxy server"), slog.String("httpAddr", httpAddr))
 	return http.ListenAndServe(httpAddr, mux)
 }

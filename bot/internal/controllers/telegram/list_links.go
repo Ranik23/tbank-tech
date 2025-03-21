@@ -19,7 +19,7 @@ func (b *BotHandlers) ListLinksHandler() telebot.HandlerFunc {
 		}
 
 		for _, link := range responses.Links {
-			c.Send(link.GetUrl())
+			c.Send(link)
 		}
 		return nil
 	}

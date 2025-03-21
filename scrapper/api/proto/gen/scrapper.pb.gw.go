@@ -35,15 +35,15 @@ var (
 	_ = metadata.Join
 )
 
-var filter_Scrapper_RegisterUser_0 = &utilities.DoubleArray{Encoding: map[string]int{"tg_user_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-
 func request_Scrapper_RegisterUser_0(ctx context.Context, marshaler runtime.Marshaler, client ScrapperClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq RegisterUserRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	io.Copy(io.Discard, req.Body)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	val, ok := pathParams["tg_user_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
@@ -51,12 +51,6 @@ func request_Scrapper_RegisterUser_0(ctx context.Context, marshaler runtime.Mars
 	protoReq.TgUserId, err = runtime.Int64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_RegisterUser_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.RegisterUser(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -68,6 +62,9 @@ func local_request_Scrapper_RegisterUser_0(ctx context.Context, marshaler runtim
 		metadata runtime.ServerMetadata
 		err      error
 	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	val, ok := pathParams["tg_user_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
@@ -75,12 +72,6 @@ func local_request_Scrapper_RegisterUser_0(ctx context.Context, marshaler runtim
 	protoReq.TgUserId, err = runtime.Int64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_RegisterUser_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.RegisterUser(ctx, &protoReq)
 	return msg, metadata, err
@@ -123,19 +114,20 @@ func local_request_Scrapper_DeleteUser_0(ctx context.Context, marshaler runtime.
 	return msg, metadata, err
 }
 
-var filter_Scrapper_GetLinks_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-
 func request_Scrapper_GetLinks_0(ctx context.Context, marshaler runtime.Marshaler, client ScrapperClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetLinksRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	io.Copy(io.Discard, req.Body)
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_GetLinks_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := client.GetLinks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -145,12 +137,15 @@ func local_request_Scrapper_GetLinks_0(ctx context.Context, marshaler runtime.Ma
 	var (
 		protoReq GetLinksRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_GetLinks_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := server.GetLinks(ctx, &protoReq)
 	return msg, metadata, err
@@ -160,9 +155,18 @@ func request_Scrapper_AddLink_0(ctx context.Context, marshaler runtime.Marshaler
 	var (
 		protoReq AddLinkRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
+	}
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := client.AddLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -172,27 +176,39 @@ func local_request_Scrapper_AddLink_0(ctx context.Context, marshaler runtime.Mar
 	var (
 		protoReq AddLinkRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
+	}
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := server.AddLink(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-var filter_Scrapper_RemoveLink_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-
 func request_Scrapper_RemoveLink_0(ctx context.Context, marshaler runtime.Marshaler, client ScrapperClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq RemoveLinkRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
-	io.Copy(io.Discard, req.Body)
-	if err := req.ParseForm(); err != nil {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_RemoveLink_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
+	}
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := client.RemoveLink(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -202,12 +218,18 @@ func local_request_Scrapper_RemoveLink_0(ctx context.Context, marshaler runtime.
 	var (
 		protoReq RemoveLinkRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
-	if err := req.ParseForm(); err != nil {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Scrapper_RemoveLink_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok := pathParams["tg_user_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tg_user_id")
+	}
+	protoReq.TgUserId, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tg_user_id", err)
 	}
 	msg, err := server.RemoveLink(ctx, &protoReq)
 	return msg, metadata, err
@@ -225,7 +247,7 @@ func RegisterScrapperHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/RegisterUser", runtime.WithHTTPPathPattern("/tg-chat/{tg_user_id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/RegisterUser", runtime.WithHTTPPathPattern("/user/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -245,7 +267,7 @@ func RegisterScrapperHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/DeleteUser", runtime.WithHTTPPathPattern("/tg-chat/{tg_user_id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/DeleteUser", runtime.WithHTTPPathPattern("/user/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -265,7 +287,7 @@ func RegisterScrapperHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/GetLinks", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/GetLinks", runtime.WithHTTPPathPattern("/users/{tg_user_id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -285,7 +307,7 @@ func RegisterScrapperHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/AddLink", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/AddLink", runtime.WithHTTPPathPattern("/link/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -299,13 +321,13 @@ func RegisterScrapperHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		}
 		forward_Scrapper_AddLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_Scrapper_RemoveLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_Scrapper_RemoveLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/RemoveLink", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/scrapper.Scrapper/RemoveLink", runtime.WithHTTPPathPattern("/link/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -363,7 +385,7 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/RegisterUser", runtime.WithHTTPPathPattern("/tg-chat/{tg_user_id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/RegisterUser", runtime.WithHTTPPathPattern("/user/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -380,7 +402,7 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/DeleteUser", runtime.WithHTTPPathPattern("/tg-chat/{tg_user_id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/DeleteUser", runtime.WithHTTPPathPattern("/user/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -397,7 +419,7 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/GetLinks", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/GetLinks", runtime.WithHTTPPathPattern("/users/{tg_user_id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -414,7 +436,7 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/AddLink", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/AddLink", runtime.WithHTTPPathPattern("/link/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -427,11 +449,11 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		}
 		forward_Scrapper_AddLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_Scrapper_RemoveLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_Scrapper_RemoveLink_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/RemoveLink", runtime.WithHTTPPathPattern("/links"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/scrapper.Scrapper/RemoveLink", runtime.WithHTTPPathPattern("/link/{tg_user_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -448,11 +470,11 @@ func RegisterScrapperHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 }
 
 var (
-	pattern_Scrapper_RegisterUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"tg-chat", "tg_user_id"}, ""))
-	pattern_Scrapper_DeleteUser_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"tg-chat", "tg_user_id"}, ""))
-	pattern_Scrapper_GetLinks_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"links"}, ""))
-	pattern_Scrapper_AddLink_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"links"}, ""))
-	pattern_Scrapper_RemoveLink_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"links"}, ""))
+	pattern_Scrapper_RegisterUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"user", "tg_user_id"}, ""))
+	pattern_Scrapper_DeleteUser_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"user", "tg_user_id"}, ""))
+	pattern_Scrapper_GetLinks_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"users", "tg_user_id", "links"}, ""))
+	pattern_Scrapper_AddLink_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"link", "tg_user_id"}, ""))
+	pattern_Scrapper_RemoveLink_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"link", "tg_user_id"}, ""))
 )
 
 var (

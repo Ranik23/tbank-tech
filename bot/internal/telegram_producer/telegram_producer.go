@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	telegrambot "github.com/Ranik23/tbank-tech/bot/internal/telegram_bot"
+	telegrambot "github.com/Ranik23/tbank-tech/bot/internal/telegram_producer/telegram_bot"
 	"github.com/Ranik23/tbank-tech/bot/internal/telegram_producer/utils"
 
 	"github.com/IBM/sarama"

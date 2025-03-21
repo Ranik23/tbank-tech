@@ -16,78 +16,14 @@
     "application/json"
   ],
   "paths": {
-    "/links": {
-      "get": {
-        "operationId": "Scrapper_GetLinks",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/scrapperListLinksResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "tgUserId",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "Scrapper"
-        ]
-      },
-      "delete": {
-        "operationId": "Scrapper_RemoveLink",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/scrapperLinkResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "tgUserId",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "url",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Scrapper"
-        ]
-      },
+    "/link/{tgUserId}": {
       "post": {
         "operationId": "Scrapper_AddLink",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/scrapperLinkResponse"
+              "$ref": "#/definitions/scrapperAddLinkResponse"
             }
           },
           "default": {
@@ -99,11 +35,55 @@
         },
         "parameters": [
           {
+            "name": "tgUserId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/scrapperAddLinkRequest"
+              "$ref": "#/definitions/ScrapperAddLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "Scrapper"
+        ]
+      },
+      "patch": {
+        "operationId": "Scrapper_RemoveLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/scrapperRemoveLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tgUserId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ScrapperRemoveLinkBody"
             }
           }
         ],
@@ -112,7 +92,7 @@
         ]
       }
     },
-    "/tg-chat/{tgUserId}": {
+    "/user/{tgUserId}": {
       "delete": {
         "operationId": "Scrapper_DeleteUser",
         "responses": {
@@ -167,17 +147,43 @@
             "format": "int64"
           },
           {
-            "name": "name",
-            "description": "Имя пользователя",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ScrapperRegisterUserBody"
+            }
+          }
+        ],
+        "tags": [
+          "Scrapper"
+        ]
+      }
+    },
+    "/users/{tgUserId}/links": {
+      "get": {
+        "operationId": "Scrapper_GetLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/scrapperListLinksResponse"
+            }
           },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
           {
-            "name": "token",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "tgUserId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -187,6 +193,34 @@
     }
   },
   "definitions": {
+    "ScrapperAddLinkBody": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "ScrapperRegisterUserBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        }
+      },
+      "title": "запросы"
+    },
+    "ScrapperRemoveLinkBody": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -215,18 +249,14 @@
         }
       }
     },
-    "scrapperAddLinkRequest": {
+    "scrapperAddLinkResponse": {
       "type": "object",
       "properties": {
-        "tgUserId": {
-          "type": "string",
-          "format": "int64"
-        },
-        "url": {
+        "message": {
           "type": "string"
         }
       },
-      "title": "Запрос для добавления ссылки"
+      "title": "ответы"
     },
     "scrapperDeleteUserResponse": {
       "type": "object",
@@ -234,21 +264,7 @@
         "message": {
           "type": "string"
         }
-      },
-      "title": "Ответ на удаление пользователя"
-    },
-    "scrapperLinkResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "int64"
-        },
-        "url": {
-          "type": "string"
-        }
-      },
-      "title": "Ответ на ссылку"
+      }
     },
     "scrapperListLinksResponse": {
       "type": "object",
@@ -256,16 +272,10 @@
         "links": {
           "type": "array",
           "items": {
-            "type": "object",
-            "$ref": "#/definitions/scrapperLinkResponse"
+            "type": "string"
           }
-        },
-        "size": {
-          "type": "integer",
-          "format": "int32"
         }
-      },
-      "title": "Ответ на получение списка ссылок"
+      }
     },
     "scrapperRegisterUserResponse": {
       "type": "object",
@@ -273,8 +283,15 @@
         "message": {
           "type": "string"
         }
-      },
-      "title": "Ответ на регистрацию пользователя"
+      }
+    },
+    "scrapperRemoveLinkResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
     }
   }
 }
