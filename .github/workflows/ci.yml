@@ -24,9 +24,14 @@ jobs:
     - name: Install dependencies
       run: go mod tidy
 
+    - name: Install linters
+      run: |
+        go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+        go install github.com/uudashr/gocognit/cmd/gocognit@latest
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
     - name: Run linters
       run: |
         go vet ./...
         gocyclo ./...
         gocognit ./...
-
