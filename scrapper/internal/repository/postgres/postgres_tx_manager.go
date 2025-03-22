@@ -32,10 +32,10 @@ func (t *txPostgresManager) GetExecutor(ctx context.Context) txmanager.Executor 
 	return t.pool
 }
 
-func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
+func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Context) error, accessMode pgx.TxAccessMode) error {
 	opts := pgx.TxOptions{
 		IsoLevel:   pgx.Serializable,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: accessMode,
 	}
 
 	var err error

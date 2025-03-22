@@ -5,11 +5,13 @@ package service
 import (
 	"context"
 	"errors"
+
 	//"errors"
 	"log/slog"
 	"testing"
 
 	hubmock "github.com/Ranik23/tbank-tech/scrapper/internal/hub/mock"
+	"github.com/jackc/pgx/v5"
 	//"github.com/Ranik23/tbank-tech/scrapper/internal/models"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/mock"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
@@ -31,8 +33,8 @@ func TestDeleteUserSucces(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -55,8 +57,8 @@ func TestDeleteUserNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -78,8 +80,8 @@ func TestDeleteUserDbError(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -101,8 +103,8 @@ func TestDeleteUserDeleteError(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -126,8 +128,8 @@ func TestDeleteUserTxError(t *testing.T) {
 	service, err := NewService(repoMock, txManagerMock, hubMock, logger)
 	require.NoError(t, err)
 
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(func(ctx context.Context) error { return nil })).
-		DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(func(ctx context.Context) error { return nil }), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 			return errors.New("transaction error")
 		})
 

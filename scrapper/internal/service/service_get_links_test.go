@@ -13,6 +13,7 @@ import (
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/mock"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
 	"github.com/golang/mock/gomock"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,8 +31,8 @@ func TestGetLinksSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -66,8 +67,8 @@ func TestGetLinksUserNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -90,8 +91,8 @@ func TestGetLinksDbErrorOnGetUserByID(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -115,8 +116,8 @@ func TestGetLinksDbErrorOnGetLinks(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -145,8 +146,8 @@ func TestGetLinksTxError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ошибка при начале транзакции
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(func(ctx context.Context) error { return nil })).
-		DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(func(ctx context.Context) error { return nil }), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 			return errors.New("transaction error")
 		})
 

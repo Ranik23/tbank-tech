@@ -15,5 +15,5 @@ type Executor interface {
 
 type TxManager interface {
 	GetExecutor(ctx context.Context) Executor
-	WithTx(ctx context.Context, fn func(ctx context.Context) error) error 
+	WithTx(ctx context.Context, fn func(ctx context.Context) error, accessMode pgx.TxAccessMode) error 
 }

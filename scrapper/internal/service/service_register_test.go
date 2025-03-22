@@ -13,6 +13,7 @@ import (
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/mock"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
 	"github.com/golang/mock/gomock"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,8 +30,8 @@ func TestRegisterUserSucces(t *testing.T) {
 	require.NoError(t, err)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -52,8 +53,8 @@ func TestRegisterUser_AlreadyExists(t *testing.T) {
 	service, err := NewService(repoMock, txManagerMock, hubMock, logger)
 	require.NoError(t, err)
 
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 			return fn(ctx)
 		},
 	)
@@ -75,8 +76,8 @@ func TestRegisterUser_CreateUserFails(t *testing.T) {
 	service, err := NewService(repoMock, txManagerMock, hubMock, logger)
 	require.NoError(t, err)
 
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 			return fn(ctx)
 		},
 	)
@@ -102,7 +103,7 @@ func TestRegisterUser_WithTxFails(t *testing.T) {
 	service, err := NewService(repoMock, txManagerMock, hubMock, logger)
 	require.NoError(t, err)
 
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any()).Return(errors.New("tx failed"))
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("tx failed"))
 
 	err = service.RegisterUser(context.Background(), 1, "anton", "token")
 	require.ErrorContains(t, err, "tx failed")

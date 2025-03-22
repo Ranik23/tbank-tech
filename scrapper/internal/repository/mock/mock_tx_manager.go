@@ -7,8 +7,8 @@ package mock
 import (
 	context "context"
 	reflect "reflect"
-	repository "github.com/Ranik23/tbank-tech/scrapper/internal/repository"
 
+	repository "github.com/Ranik23/tbank-tech/scrapper/internal/repository"
 	gomock "github.com/golang/mock/gomock"
 	pgx "github.com/jackc/pgx/v5"
 	pgconn "github.com/jackc/pgx/v5/pgconn"
@@ -134,15 +134,15 @@ func (mr *MockTxManagerMockRecorder) GetExecutor(ctx interface{}) *gomock.Call {
 }
 
 // WithTx mocks base method.
-func (m *MockTxManager) WithTx(ctx context.Context, fn func(context.Context) error) error {
+func (m *MockTxManager) WithTx(ctx context.Context, fn func(context.Context) error, accessMode pgx.TxAccessMode) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithTx", ctx, fn)
+	ret := m.ctrl.Call(m, "WithTx", ctx, fn, accessMode)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WithTx indicates an expected call of WithTx.
-func (mr *MockTxManagerMockRecorder) WithTx(ctx, fn interface{}) *gomock.Call {
+func (mr *MockTxManagerMockRecorder) WithTx(ctx, fn, accessMode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockTxManager)(nil).WithTx), ctx, fn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockTxManager)(nil).WithTx), ctx, fn, accessMode)
 }

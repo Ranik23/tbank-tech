@@ -13,6 +13,7 @@ import (
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/mock"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
 	"github.com/golang/mock/gomock"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,8 +32,8 @@ func TestRemoveLinkSuccess(t *testing.T) {
 	userID := uint(1)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -69,8 +70,8 @@ func TestRemoveLinkNotFound(t *testing.T) {
 	userID := uint(1)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -97,8 +98,8 @@ func TestRemoveLinkUserNotFound(t *testing.T) {
 	userID := uint(1)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
@@ -128,8 +129,8 @@ func TestRemoveLinkDeleteError(t *testing.T) {
 	userID := uint(1)
 
 	var fn func(ctx context.Context) error
-	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn)).
-	DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	txManagerMock.EXPECT().WithTx(gomock.Any(), gomock.AssignableToTypeOf(fn), gomock.Any()).
+	DoAndReturn(func(ctx context.Context, fn func(context.Context) error, mode pgx.TxAccessMode) error {
 		return fn(ctx)
 	})
 
