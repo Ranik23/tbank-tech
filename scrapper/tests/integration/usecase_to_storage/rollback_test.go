@@ -174,6 +174,7 @@ func TestRollBackCheckRemoveLink(t *testing.T) {
 	mockHub := mockhub.NewMockHub(ctrl)
 
 	mockHub.EXPECT().RemoveLink(gomock.Any(), gomock.Any()).AnyTimes().Return(errors.New("hub error"))
+	
 	mockHub.EXPECT().AddLink(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 
@@ -194,7 +195,7 @@ func TestRollBackCheckRemoveLink(t *testing.T) {
 	require.NoError(t, err)
 	
 
-	// тут будет вызван роллбек, тк транзакция завершится с ошибкоц от mockHub 
+	// тут будет вызван роллбек, тк транзакция завершится с ошибкой от mockHub 
 	// и defer обязан будет поймать ошибку и сделать роллбек транзакции
 	err = service.RemoveLink(context.Background(), exampleLink, uint(exampleID))
 	require.Error(t, err)
