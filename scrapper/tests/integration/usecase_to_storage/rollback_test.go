@@ -29,7 +29,7 @@ func TestRollBackCheckAddLink(t *testing.T) {
 
 	logger := slog.Default()
 
-	cfg, err := config.LoadConfig("/home/anton/tbank-tech/.env")
+	cfg, err := config.LoadConfig("../../../../.env")
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -119,7 +119,7 @@ func TestRollBackCheckAddLink(t *testing.T) {
 func TestRollBackCheckRemoveLink(t *testing.T) {
 	logger := slog.Default()
 
-	cfg, err := config.LoadConfig("/home/anton/tbank-tech/.env")
+	cfg, err := config.LoadConfig("../../../../.env")
 	require.NoError(t, err)
 
 	ctx := context.Background()
