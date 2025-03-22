@@ -134,6 +134,7 @@ func (h *hub) checkForNewCommit(link, owner, repo, token string, userID uint, op
 	val, ok := h.latestCommitSHA.Load(link)
 	if !ok || commit.GetSHA() != val {
 		h.latestCommitSHA.Store(link, commit.GetSHA())
+		h.logger.Info(op, "New Commit!", slog.String("owner", owner), slog.String("repo", repo))
 		h.commitChan <- CustomCommit{Commit: commit, UserID: userID}
 	}
 }
