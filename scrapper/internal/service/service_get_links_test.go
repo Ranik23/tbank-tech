@@ -47,7 +47,12 @@ func TestGetLinksSuccess(t *testing.T) {
 
 	links, err := service.GetLinks(context.Background(), 1)
 	require.NoError(t, err)
-	require.Equal(t, expectedLinks, links)
+	require.Equal(t, len(expectedLinks), len(links))
+
+	for i := 0; i < len(links); i++ {
+		require.Equal(t, links[i].URL, expectedLinks[i].Url)
+		require.Equal(t, links[i].ID, expectedLinks[i].ID)
+	}
 }
 
 func TestGetLinksUserNotFound(t *testing.T) {
@@ -96,7 +101,7 @@ func TestGetLinksDbErrorOnGetUserByID(t *testing.T) {
 	links, err := service.GetLinks(context.Background(), 1)
 	require.Nil(t, links)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to get user")
+	require.Equal(t, err.Error(), "database is down")
 }
 
 func TestGetLinksDbErrorOnGetLinks(t *testing.T) {
@@ -124,7 +129,7 @@ func TestGetLinksDbErrorOnGetLinks(t *testing.T) {
 	links, err := service.GetLinks(context.Background(), 1)
 	require.Nil(t, links)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to get links")
+	require.Equal(t, err.Error(), "failed to fetch links")
 }
 
 

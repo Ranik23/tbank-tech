@@ -17,15 +17,21 @@ import (
 	"github.com/Ranik23/tbank-tech/scrapper/internal/gateway"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/hub"
 	kafkaproducer "github.com/Ranik23/tbank-tech/scrapper/internal/kafka_producer"
+	"github.com/Ranik23/tbank-tech/scrapper/internal/metrics"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
 	git "github.com/Ranik23/tbank-tech/scrapper/pkg/github_client"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/IBM/sarama"
 	"github.com/lmittmann/tint"
 	"google.golang.org/grpc"
 )
+
+func init() {
+	prometheus.MustRegister(metrics.TotalRequests, metrics.ErrorRequests, metrics.RequestDuration)
+}
 
 type App struct {
 	grpcServer    *grpc.Server

@@ -72,7 +72,7 @@ func (s *ScrapperServer) GetLinks(ctx context.Context, req *gen.GetLinksRequest)
 
 	var linksResponse []string
 	for _, link := range links {
-		linksResponse = append(linksResponse, link.Url)
+		linksResponse = append(linksResponse, link.URL)
 	}
 	duration := time.Since(start)
 	metrics.RequestDuration.Observe(duration.Seconds())

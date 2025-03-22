@@ -118,3 +118,21 @@ func TestAddLinkDbErrorOnCreateLinkUser(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to link user and link")
 }
 
+
+func TestAddLinkErrorOnInvalidURL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	repoMock := mock.NewMockRepository(ctrl)
+	txManagerMock := mock.NewMockTxManager(ctrl)
+	hubMock := hubmock.NewMockHub(ctrl)
+	logger := slog.Default()
+
+	service, err := NewService(repoMock, txManagerMock, hubMock, logger)
+	require.NoError(t, err)
+
+	link := "invalid link"
+	userID := uint(1)
+
+	err = service.AddLink(context.Background(), link, userID)
+	require.Error(t, err)
+}
+

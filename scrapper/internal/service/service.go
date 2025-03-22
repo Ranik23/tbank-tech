@@ -15,20 +15,18 @@ import (
 )
 
 var (
-	ErrEmptyLink = fmt.Errorf("empty link")
-	ErrInvalidLink = fmt.Errorf("invalid link")
+	ErrInvalidLink 		 = fmt.Errorf("invalid link")
 	ErrUserAlreadyExists = fmt.Errorf("user already exists")
-	ErrUserNotFound = fmt.Errorf("user not found")
-	ErrFailedToGetUser = fmt.Errorf("failed to get user")
-	ErrLinkNotFound = fmt.Errorf("link not found")
+	ErrUserNotFound 	 = fmt.Errorf("user not found")
+	ErrLinkNotFound 	 = fmt.Errorf("link not found")
 )
 
 type Service interface {
-	RegisterUser(ctx context.Context, userID uint, name string, token string) error
-	DeleteUser(ctx context.Context, userID uint) error
-	GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error)
-	AddLink(ctx context.Context, link string, userID uint) error
-	RemoveLink(ctx context.Context, link string, userID uint) error
+	RegisterUser(ctx context.Context, userID uint, name string, token string) 	error
+	DeleteUser(ctx context.Context, userID uint) 								error
+	GetLinks(ctx context.Context, userID uint) 									([]Link, error)
+	AddLink(ctx context.Context, link string, userID uint) 						error
+	RemoveLink(ctx context.Context, link string, userID uint) 					error
 }
 
 type service struct {
@@ -38,7 +36,8 @@ type service struct {
 	repo      repository.Repository
 }
 
-func NewService(repo repository.Repository, txManager repository.TxManager, hub hub.Hub, logger *slog.Logger) (Service, error) {
+func NewService(repo repository.Repository, txManager repository.TxManager,
+				hub hub.Hub, logger *slog.Logger) (Service, error) {
 	return &service{
 		repo:      repo,
 		txManager: txManager,
@@ -80,8 +79,8 @@ func (s *service) DeleteUser(ctx context.Context, userID uint) error {
 }
 
 
-func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, error) {
-	var links []dbmodels.Link
+func (s *service) GetLinks(ctx context.Context, userID uint) ([]Link, error) {
+	var links []Link
 	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		_, err := s.repo.GetUserByID(txCtx, userID)
 		if err != nil {
@@ -90,15 +89,26 @@ func (s *service) GetLinks(ctx context.Context, userID uint) ([]dbmodels.Link, e
 			}
 			return err
 		}
-		links, err = s.repo.GetLinks(txCtx, userID)
+
+		dbLinks, err := s.repo.GetLinks(txCtx, userID)
 		if err != nil {
 			return err
 		}
+
+		for _, link := range dbLinks {
+			links = append(links, Link{
+				URL: link.Url,
+				ID:  link.ID,
+			})
+		}
+
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
+	
 	return links, nil
 }
 
@@ -109,8 +119,7 @@ func (s *service) AddLink(ctx context.Context, link string, userID uint) error {
 		s.logger.Error("Wrong URL schema", slog.String("error", err.Error()))
 		return ErrInvalidLink
 	}
-
-	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+	err = s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		user, err := s.repo.GetUserByID(txCtx, userID)
 		if err != nil {
 			if errors.Is(err, postgres.ErrNoUserFound) {
@@ -145,6 +154,13 @@ func (s *service) AddLink(ctx context.Context, link string, userID uint) error {
 		}
 		return nil
 	})
+
+	if err != nil {
+		s.logger.Error("Failed to complete transaction", slog.String("error", err.Error()))
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) RemoveLink(ctx context.Context, link string, userID uint) error {
@@ -153,7 +169,7 @@ func (s *service) RemoveLink(ctx context.Context, link string, userID uint) erro
 		s.logger.Error("Wrong URL schema", slog.String("link", link), slog.String("error", err.Error()))
 		return ErrInvalidLink
 	}
-	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+	err = s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		linkObj, err := s.repo.GetLinkByURL(txCtx, link)
 		if err != nil {
 			if errors.Is(err, postgres.ErrNoLinkFound) {
@@ -161,7 +177,6 @@ func (s *service) RemoveLink(ctx context.Context, link string, userID uint) erro
 			}
 			return err
 		}
-
 		_, err = s.repo.GetUserByID(txCtx, userID)
 		if err != nil {
 			return ErrUserNotFound
@@ -177,4 +192,9 @@ func (s *service) RemoveLink(ctx context.Context, link string, userID uint) erro
 
 		return nil
 	})
+	if err != nil {
+		s.logger.Error("Failed to complete transaction", slog.String("error", err.Error()))
+		return err
+	}
+	return nil
 }

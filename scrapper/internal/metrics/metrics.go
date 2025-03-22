@@ -24,7 +24,3 @@ var (
 		},
 	)
 )
-
-func init() {
-	prometheus.MustRegister(TotalRequests, ErrorRequests, RequestDuration)
-}

@@ -55,8 +55,6 @@ func (t *txPostgresManager) WithTx(ctx context.Context, fn func(ctx context.Cont
 		}
 	}()
 
-	type txKey struct{}
-
 	ctx = context.WithValue(ctx, txKey{}, tx)
 
 	err = fn(ctx)

@@ -22,6 +22,3 @@ do
 done
 
 echo "Kafka is up and running at $KAFKA_HOST:$KAFKA_PORT!"
-
-# Теперь можно запускать приложение
-# exec "$@"
