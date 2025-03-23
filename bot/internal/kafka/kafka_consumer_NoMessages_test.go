@@ -18,17 +18,22 @@ func TestKafkaConsumer_NoMessages(t *testing.T) {
 	exampleTopic := "test"
 	examplePartitions := []int32{0}
 
-	logger := slog.Default()
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Consumer.Return.Errors = true
 
-	config := sarama.NewConfig()
-	config.Consumer.Return.Errors = true
+	mockConsumer := mocks.NewConsumer(t, saramaConfig)
 
-	mockConsumer := mocks.NewConsumer(t, config)
 	mockConsumer.SetTopicMetadata(map[string][]int32{exampleTopic: examplePartitions})
 	mockConsumer.ExpectConsumePartition(exampleTopic, examplePartitions[0], sarama.OffsetNewest)
 
 	commitCh := make(chan sarama.ConsumerMessage)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
+	kafkaConsumer := KafkaConsumer{
+		consumer: mockConsumer,
+		commitCh: commitCh,
+		stopCh: make(chan struct{}),
+		logger: slog.Default(),
+		topic: exampleTopic,
+	}
 
 
 	kafkaConsumer.Run()

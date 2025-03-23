@@ -16,7 +16,7 @@ import (
 	grpcserver "github.com/Ranik23/tbank-tech/scrapper/internal/controllers/grpc"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/gateway"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/hub"
-	kafkaproducer "github.com/Ranik23/tbank-tech/scrapper/internal/kafka_producer"
+	kafkaproducer "github.com/Ranik23/tbank-tech/scrapper/internal/kafka"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/metrics"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/repository/postgres"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
@@ -98,13 +98,7 @@ func NewApp() (*App, error) {
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true
 
-	producer, err := sarama.NewAsyncProducer(cfg.Kafka.Addresses, saramaConfig)
-	if err != nil {
-		logger.Error("Failed to create a new async Kafka producer", slog.String("error", err.Error()))
-		return nil, err
-	}
-
-	kafkaProducer, err := kafkaproducer.NewKafkaProducer(producer, logger, commitCh, cfg.Kafka.Topic)
+	kafkaProducer, err := kafkaproducer.NewKafkaProducer(cfg.Kafka.Addresses, logger, commitCh, cfg.Kafka.Topic, saramaConfig)
 	if err != nil {
 		logger.Error("Failed to create a new Kafka producer", slog.String("error", err.Error()))
 		return nil, err

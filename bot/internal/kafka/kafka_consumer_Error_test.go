@@ -38,7 +38,13 @@ func TestKafkaConsumer_ErrorOnMessage(t *testing.T) {
 	mockPartitionConsumer.YieldError(errors.New("simulated error"))
 
 	commitCh := make(chan sarama.ConsumerMessage, 1)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
+	kafkaConsumer := KafkaConsumer{
+		consumer: mockConsumer,
+		commitCh: commitCh,
+		stopCh: make(chan struct{}),
+		logger: logger,
+		topic: exampleTopic,
+	}
 
 
 	go kafkaConsumer.Run()

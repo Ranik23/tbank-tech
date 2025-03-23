@@ -18,7 +18,13 @@ type KafkaProducer struct {
 	stopCh      chan struct{}
 }
 
-func NewKafkaProducer(producer sarama.AsyncProducer, logger *slog.Logger, commitCh chan hub.CustomCommit, topic string) (*KafkaProducer, error) {
+func NewKafkaProducer(addresses []string, logger *slog.Logger,
+						commitCh chan hub.CustomCommit, topic string, saramaConfig *sarama.Config) (*KafkaProducer, error) {
+	producer, err := sarama.NewAsyncProducer(addresses, saramaConfig)
+	if err != nil {
+		logger.Error("Failed to create a new async Kafka producer", slog.String("error", err.Error()))
+		return nil, err
+	}
 	return &KafkaProducer{
 		logger:      logger,
 		producer:    producer,

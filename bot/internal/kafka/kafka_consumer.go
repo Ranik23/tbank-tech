@@ -14,14 +14,20 @@ type KafkaConsumer struct {
 	topic    string
 }
 
-func NewKafkaConsumer(kafkaConsumer sarama.Consumer, topicToRead string, commitCh chan sarama.ConsumerMessage, logger *slog.Logger) *KafkaConsumer {
+func NewKafkaConsumer(addresses []string, topicToRead string,
+						commitCh chan sarama.ConsumerMessage, logger *slog.Logger, saramaConfig *sarama.Config) (*KafkaConsumer, error) {
+	consumer, err := sarama.NewConsumer(addresses, saramaConfig)
+	if err != nil {
+		logger.Error("Failed to create a new Sarama consumer", slog.String("error", err.Error()))
+		return nil, err
+	}
 	return &KafkaConsumer{
-		consumer: kafkaConsumer,
+		consumer: consumer,
 		logger:   logger,
 		topic:    topicToRead,
 		commitCh: commitCh,
 		stopCh:   make(chan struct{}),
-	}
+	}, nil
 }
 
 func (kc *KafkaConsumer) Run() error {

@@ -40,7 +40,13 @@ func TestKafkaConsumer_Success(t *testing.T) {
 	mockPartitionConsumer3.YieldMessage(&sarama.ConsumerMessage{Topic: exampleTopic, Value: []byte(messages[2])})
 
 	commitCh := make(chan sarama.ConsumerMessage)
-	kafkaConsumer := NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
+	kafkaConsumer := &KafkaConsumer{
+		consumer: mockConsumer,
+		commitCh: commitCh,
+		stopCh: make(chan struct{}),
+		logger: logger,
+		topic: exampleTopic,
+	}
 
 
 	kafkaConsumer.Run()

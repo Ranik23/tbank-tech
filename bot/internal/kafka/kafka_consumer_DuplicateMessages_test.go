@@ -32,7 +32,13 @@ func TestKafkaConsumer_DuplicateMessages(t *testing.T) {
 	mockPartitionConsumer.YieldMessage(message)
 
 	commitCh := make(chan sarama.ConsumerMessage, 2)
-	kafkaConsumer:= NewKafkaConsumer(mockConsumer, exampleTopic, commitCh, logger)
+	kafkaConsumer:= &KafkaConsumer{
+		consumer: mockConsumer,
+		commitCh: commitCh,
+		stopCh: make(chan struct{}),
+		logger: logger,
+		topic: exampleTopic,
+	}
 
 	kafkaConsumer.Run()
 	defer kafkaConsumer.Stop()

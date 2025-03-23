@@ -17,7 +17,7 @@ import (
 	grpcserver "github.com/Ranik23/tbank-tech/bot/internal/controllers/grpc"
 	telegramhandlers "github.com/Ranik23/tbank-tech/bot/internal/controllers/telegram"
 	"github.com/Ranik23/tbank-tech/bot/internal/gateway"
-	kafkaconsumer "github.com/Ranik23/tbank-tech/bot/internal/kafka_consumer"
+	kafkaconsumer "github.com/Ranik23/tbank-tech/bot/internal/kafka"
 	"github.com/Ranik23/tbank-tech/bot/internal/service"
 	telegramproducer "github.com/Ranik23/tbank-tech/bot/internal/telegram_producer"
 
@@ -101,19 +101,6 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.Consumer.Return.Errors = true
-
-	consumer, err := sarama.NewConsumer(config.Kafka.Addresses, saramaConfig)
-	if err != nil {
-		logger.Error("Failed to create a new Sarama consumer", slog.String("error", err.Error()))
-		return nil, err
-	}
-	logger.Info("Successfully created a Kafka consumer")
-
-
-
 	commitCh := make(chan sarama.ConsumerMessage)
 
 	telegramProducer := telegramproducer.NewTelegramProducer(bot, logger, commitCh)
@@ -123,7 +110,17 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	kafkaConsumer := kafkaconsumer.NewKafkaConsumer(consumer, config.Kafka.Topic, commitCh, logger)
+
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Consumer.Return.Errors = true
+
+	kafkaConsumer, err := kafkaconsumer.NewKafkaConsumer(config.Kafka.Addresses, config.Kafka.Topic, commitCh, logger, saramaConfig)
+	if err != nil {
+		logger.Error("Failed to create a new Sarama consumer", slog.String("error", err.Error()))
+		return nil, err
+	}
+
+	logger.Info("Successfully created a Kafka consumer")
 
 	closer.Add(func(ctx context.Context) error {
 		kafkaConsumer.Stop()
