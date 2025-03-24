@@ -71,7 +71,7 @@ func NewApp() (*App, error) {
 		return nil
 	})
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(grpcserver.ErrorHandlingInterceptor))
 
 	closer.Add(func(ctx context.Context) error {
 		logger.Info("Stopping gRPC serve...")

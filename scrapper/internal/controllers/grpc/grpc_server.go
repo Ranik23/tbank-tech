@@ -2,15 +2,12 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/Ranik23/tbank-tech/scrapper/api/proto/gen"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/metrics"
 	"github.com/Ranik23/tbank-tech/scrapper/internal/service"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type ScrapperServer struct {
@@ -29,12 +26,7 @@ func (s *ScrapperServer) RegisterUser(ctx context.Context, req *gen.RegisterUser
 	metrics.TotalRequests.Inc()
 	if err := s.usecase.RegisterUser(ctx, uint(req.GetTgUserId()), req.GetName(), req.GetToken()); err != nil {
 		metrics.ErrorRequests.Inc()
-		switch {
-		case errors.Is(err, service.ErrUserAlreadyExists):
-			return nil, status.Errorf(codes.AlreadyExists, "Already Exists")
-		default:
-			return nil, status.Errorf(codes.Internal, "Internal Server Error")
-		}
+		return nil, err
 	}
 	
 	duration := time.Since(start)
@@ -48,12 +40,7 @@ func (s *ScrapperServer) DeleteUser(ctx context.Context, req *gen.DeleteUserRequ
 	metrics.TotalRequests.Inc()
 	if err := s.usecase.DeleteUser(ctx, uint(req.GetTgUserId())); err != nil {
 		metrics.ErrorRequests.Inc()
-		switch {
-		case errors.Is(err, service.ErrUserNotFound):
-			return nil, status.Errorf(codes.NotFound, "User Not Found")
-		default:
-			return nil, status.Errorf(codes.Internal, "Internal Server Error")
-		}
+		return nil, err
 	}
 	duration := time.Since(start)
 	metrics.RequestDuration.Observe(duration.Seconds())
@@ -67,7 +54,7 @@ func (s *ScrapperServer) GetLinks(ctx context.Context, req *gen.GetLinksRequest)
 	links, err := s.usecase.GetLinks(ctx, uint(req.GetTgUserId()))
 	if err != nil {
 		metrics.ErrorRequests.Inc()
-		return nil, status.Errorf(codes.Internal, "Internal Server Error")
+		return nil, err
 	}
 
 	var linksResponse []string
@@ -84,7 +71,7 @@ func (s *ScrapperServer) AddLink(ctx context.Context, req *gen.AddLinkRequest) (
 	metrics.TotalRequests.Inc()
 	if err := s.usecase.AddLink(ctx, req.GetUrl(), uint(req.GetTgUserId())); err != nil {
 		metrics.ErrorRequests.Inc()
-		return nil, status.Errorf(codes.Internal, "Internal Server Error")
+		return nil, err
 	}
 	duration := time.Since(start)
 	metrics.RequestDuration.Observe(duration.Seconds())
@@ -96,7 +83,7 @@ func (s *ScrapperServer) RemoveLink(ctx context.Context, req *gen.RemoveLinkRequ
 	metrics.TotalRequests.Inc()
 	if err := s.usecase.RemoveLink(ctx, req.GetUrl(), uint(req.GetTgUserId())); err != nil {
 		metrics.ErrorRequests.Inc()
-		return nil, status.Errorf(codes.Internal, "Internal Server Error")
+		return nil, err
 	}
 	duration := time.Since(start)
 	metrics.RequestDuration.Observe(duration.Seconds())
